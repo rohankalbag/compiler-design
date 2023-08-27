@@ -1,17 +1,18 @@
 package visitor;
+
 import java.util.*;
 
 class ClassInfo {
-		String parentClass;
-		Map<String, String> fieldTypes;
-		Map<String, MethodInfo> methods;
+    String parentClass;
+    Map<String, String> fieldTypes;
+    Map<String, MethodInfo> methods;
 
-		public ClassInfo() {
-			parentClass = null;
-			fieldTypes = new HashMap<>();
-			methods = new HashMap<>();
-		}
-	}
+    public ClassInfo() {
+        parentClass = null;
+        fieldTypes = new HashMap<>();
+        methods = new HashMap<>();
+    }
+}
 
 class MethodInfo {
     String retType;

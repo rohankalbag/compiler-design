@@ -7,7 +7,7 @@ public class Main {
          Node root = new MiniJavaParser(System.in).Goal();
          GJDepthFirstSymbolPopulation firstParser = new GJDepthFirstSymbolPopulation();
          GJDepthFirst secondParser = new GJDepthFirst();
-         root.accept(firstParser, "first"); 
+         root.accept(firstParser, "first");
          secondParser.SymbolTable = firstParser.SymbolTable;
          root.accept(secondParser, "second");
       } catch (ParseException e) {

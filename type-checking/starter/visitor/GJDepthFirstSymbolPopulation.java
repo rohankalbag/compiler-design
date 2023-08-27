@@ -166,11 +166,12 @@ public class GJDepthFirstSymbolPopulation implements GJVisitor<String, String> {
 		currClass = n.f1.accept(this, argu);
 		class_info.parentClass = null;
 		SymbolTable.put(currClass, class_info);
-		// System.out.println("Added " + currClass);
 		n.f2.accept(this, argu);
 		n.f3.accept(this, argu);
 		n.f4.accept(this, argu);
 		n.f5.accept(this, argu);
+		currClass = null;
+		currMethod = null;
 		return _ret;
 	}
 
@@ -190,7 +191,6 @@ public class GJDepthFirstSymbolPopulation implements GJVisitor<String, String> {
 		n.f0.accept(this, argu);
 		currClass = n.f1.accept(this, argu);
 		SymbolTable.put(currClass, class_info);
-		// System.out.println("Added " + currClass);
 		n.f2.accept(this, argu);
 		String parent_class = n.f3.accept(this, argu);
 		class_info.parentClass = parent_class;
@@ -198,6 +198,8 @@ public class GJDepthFirstSymbolPopulation implements GJVisitor<String, String> {
 		n.f5.accept(this, argu);
 		n.f6.accept(this, argu);
 		n.f7.accept(this, argu);
+		currClass = null;
+		currMethod = null;
 		return _ret;
 	}
 
@@ -210,7 +212,7 @@ public class GJDepthFirstSymbolPopulation implements GJVisitor<String, String> {
 		String _ret = null;
 		String type = n.f0.accept(this, argu);
 		String id = n.f1.accept(this, argu);
-		if (currClass != null)
+		if (currMethod != null)
 			SymbolTable.get(currClass).methods.get(currMethod).varparmTypes.put(id, type);
 		else
 			SymbolTable.get(currClass).fieldTypes.put(id, type);
@@ -302,36 +304,36 @@ public class GJDepthFirstSymbolPopulation implements GJVisitor<String, String> {
 		return _ret;
 	}
 
-   /**
-    * f0 -> "int"
-    * f1 -> "["
-    * f2 -> "]"
-    */
-		public String visit(ArrayType n, String argu) {
-      String _ret = "int[]";
-      n.f0.accept(this, argu);
-      n.f1.accept(this, argu);
-      n.f2.accept(this, argu);
-      return _ret;
-   }
+	/**
+	 * f0 -> "int"
+	 * f1 -> "["
+	 * f2 -> "]"
+	 */
+	public String visit(ArrayType n, String argu) {
+		String _ret = "int[]";
+		n.f0.accept(this, argu);
+		n.f1.accept(this, argu);
+		n.f2.accept(this, argu);
+		return _ret;
+	}
 
-   /**
-    * f0 -> "boolean"
-    */
-   public String visit(BooleanType n, String argu) {
-      String _ret = "boolean";
-      n.f0.accept(this, argu);
-      return _ret;
-   }
+	/**
+	 * f0 -> "boolean"
+	 */
+	public String visit(BooleanType n, String argu) {
+		String _ret = "boolean";
+		n.f0.accept(this, argu);
+		return _ret;
+	}
 
-   /**
-    * f0 -> "int"
-    */
-   public String visit(IntegerType n, String argu) {
-      String _ret = "int";
-      n.f0.accept(this, argu);
-      return _ret;
-   }
+	/**
+	 * f0 -> "int"
+	 */
+	public String visit(IntegerType n, String argu) {
+		String _ret = "int";
+		n.f0.accept(this, argu);
+		return _ret;
+	}
 
 	/**
 	 * f0 -> Block()
