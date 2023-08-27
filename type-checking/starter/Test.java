@@ -1,6 +1,6 @@
 class Test {
     public static void main(String[] args) {
-        System.out.println(new A().foo(7));
+        System.out.println(new A().foo(10));
     }
 }
 
@@ -9,71 +9,37 @@ class A {
         int x;
         boolean y;
         int z;
+        int w;
         int q;
-        boolean w;
-        int[] arr;
-        arr = new int[10];
-        q = (arr).length;
-        q = arr[2];
-        x = 3;
-        z = 3;
-        q = (3 * z) + 2;
-        arr[x] = z;
+        C obj;
+        x = 10;
         y = true;
-        w = y || !y;
         z = 0;
-        y = (true != w) && y;
-        y = 3 != 7;
-        while (x <= 14) {
-            x = x + 1;
-        }
-
-        if (y) {
-            z = (x + 1) + (x + 10);
-            if (z != 3) {
+        if (z) { // Type error 1: non-boolean expression for if statement
+            z = z + p;
+            if (z != false) { // Type error 2: comparison between integer and boolean
                 y = false;
             }
         }
-        q = this.bar(3, 8);
+        obj = this.bar(3, false);
         return z;
     }
 
-    public int bar(int f, int x) {
+    public C bar(int p, boolean v) {
         int a;
         int b;
-        a = 10;
-        return a;
+        C c;
+        c = new D();
+        a = c.x;
+        return c;
     }
 }
 
-class B extends A {
+class C{
+    int x;
 }
 
-class C {
-    boolean f;
-    int m;
-
-    public int func() {
-        int p;
-        int q;
-        int x;
-        boolean r;
-        D instance;
-        p = q + 1;
-        instance = new D();
-        instance.a = 18;
-        while (p <= 1) {
-            x = x + 1;
-        }
-        return 0;
-    }
-}
-
-class D {
-    int a;
-    boolean b;
-
-    public int foo() {
-        return 0;
-    }
+class D extends C{
+    int y;
+    int b;
 }

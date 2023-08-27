@@ -230,7 +230,7 @@ public class GJDepthFirst implements GJVisitor<String, String> {
    public String visit(MethodDeclaration n, String argu) {
       String _ret = null;
       n.f0.accept(this, argu);
-      n.f1.accept(this, argu);
+      String ret_type = n.f1.accept(this, argu);
       currMethod = n.f2.accept(this, argu);
       n.f3.accept(this, argu);
       n.f4.accept(this, argu);
@@ -239,7 +239,12 @@ public class GJDepthFirst implements GJVisitor<String, String> {
       n.f7.accept(this, argu);
       n.f8.accept(this, argu);
       n.f9.accept(this, argu);
-      n.f10.accept(this, argu);
+      String actual_ret_type = n.f10.accept(this, argu);
+      actual_ret_type = (actual_ret_type == ret_type) ? actual_ret_type
+            : SymbolTable.get(currClass).methods.get(currMethod).varparmTypes.get(actual_ret_type);
+      if (ret_type != actual_ret_type) {
+         typeError();
+      }
       n.f11.accept(this, argu);
       n.f12.accept(this, argu);
       return _ret;
@@ -361,6 +366,17 @@ public class GJDepthFirst implements GJVisitor<String, String> {
       n.f1.accept(this, argu);
       String exp_type = n.f2.accept(this, argu);
       n.f3.accept(this, argu);
+
+      if (SymbolTable.containsKey(exp_type)) {
+         ClassInfo class_info = SymbolTable.get(exp_type);
+         String parent_class = class_info.parentClass;
+         if (parent_class != null) {
+            if (parent_class == id_type) {
+               return _ret;
+            }
+         }
+      }
+
       exp_type = (exp_type == id_type) ? exp_type
             : SymbolTable.get(currClass).methods.get(currMethod).varparmTypes.get(exp_type);
 
