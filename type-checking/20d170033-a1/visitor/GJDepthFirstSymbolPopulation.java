@@ -67,7 +67,6 @@ public class GJDepthFirstSymbolPopulation implements GJVisitor<String, String> {
 	// 4. To store current class and method
 	String currClass;
 	String currMethod;
-	boolean inExtendedClass;
 
 	// 5. Maintaining and printing information about the number of type errors
 	int typeErrorCount = 0;
@@ -194,12 +193,29 @@ public class GJDepthFirstSymbolPopulation implements GJVisitor<String, String> {
 		SymbolTable.put(currClass, class_info);
 		n.f2.accept(this, argu);
 		String parent_class = n.f3.accept(this, argu);
-		inExtendedClass = true;
+		String curr_parent_class = parent_class;
+		while (curr_parent_class != null) {
+			ClassInfo parent_class_info = SymbolTable.get(curr_parent_class);
+			for (String field : parent_class_info.fieldTypes.keySet()) {
+				if (!class_info.fieldTypes.containsKey(field)) {
+					class_info.fieldTypes.put(field, parent_class_info.fieldTypes.get(field));
+				}
+			}
+
+			for (String method : parent_class_info.methods.keySet()) {
+				if (!class_info.fieldTypes.containsKey(method)) {
+					class_info.methods.put(method, parent_class_info.methods.get(method));
+				}
+			}
+
+			curr_parent_class = parent_class_info.parentClass;
+		}
 		class_info.parentClass = parent_class;
 		n.f4.accept(this, argu);
 		n.f5.accept(this, argu);
 		n.f6.accept(this, argu);
 		n.f7.accept(this, argu);
+		// System.out.println(Arrays.asList(class_info.fieldTypes));
 		currClass = null;
 		currMethod = null;
 		return _ret;
