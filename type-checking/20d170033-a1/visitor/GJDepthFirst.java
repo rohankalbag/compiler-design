@@ -1115,7 +1115,7 @@ public class GJDepthFirst implements GJVisitor<String, String> {
     */
    public String visit(MessageSend n, String argu) {
       String _ret = null;
-      currArgLists.add(new ArrayList<>());
+      currArgLists.push(new ArrayList<>());
       String id = n.f0.accept(this, argu);
       // System.out.println(id);
       MethodInfo method_info;
