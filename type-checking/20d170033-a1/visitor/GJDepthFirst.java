@@ -67,7 +67,7 @@ public class GJDepthFirst implements GJVisitor<String, String> {
    // 4. To store current class and method
    String currClass;
    String currMethod;
-   List<String> currArgList;
+   Stack<List<String>> currArgLists = new Stack<>();
 
    // 5. Maintaining and printing information about the number of type errors
    int typeErrorCount = 0;
@@ -239,9 +239,15 @@ public class GJDepthFirst implements GJVisitor<String, String> {
       n.f7.accept(this, argu);
       n.f8.accept(this, argu);
       n.f9.accept(this, argu);
+
       String actual_ret_type = n.f10.accept(this, argu);
-      actual_ret_type = (actual_ret_type == ret_type) ? actual_ret_type
-            : SymbolTable.get(currClass).methods.get(currMethod).varparmTypes.get(actual_ret_type);
+
+      if (SymbolTable.get(currClass).methods.get(currMethod).varparmTypes.containsKey(actual_ret_type)) {
+         actual_ret_type = SymbolTable.get(currClass).methods.get(currMethod).varparmTypes.get(actual_ret_type);
+      } else if (SymbolTable.get(currClass).fieldTypes.containsKey(actual_ret_type)) {
+         actual_ret_type = SymbolTable.get(currClass).fieldTypes.get(actual_ret_type);
+      }
+
       if (ret_type != actual_ret_type) {
          typeError();
       }
@@ -368,24 +374,33 @@ public class GJDepthFirst implements GJVisitor<String, String> {
       } else if (SymbolTable.get(currClass).fieldTypes.containsKey(id_type)) {
          id_type = SymbolTable.get(currClass).fieldTypes.get(id_type);
       }
+
       n.f1.accept(this, argu);
       String exp_type = n.f2.accept(this, argu);
       n.f3.accept(this, argu);
 
+      boolean isParentCase = false;
+
+      if (SymbolTable.get(currClass).methods.get(currMethod).varparmTypes.containsKey(exp_type)) {
+         exp_type = SymbolTable.get(currClass).methods.get(currMethod).varparmTypes.get(exp_type);
+      } else if (SymbolTable.get(currClass).fieldTypes.containsKey(exp_type)) {
+         exp_type = SymbolTable.get(currClass).fieldTypes.get(exp_type);
+      }
+
       if (SymbolTable.containsKey(exp_type)) {
          ClassInfo class_info = SymbolTable.get(exp_type);
          String parent_class = class_info.parentClass;
-         if (parent_class != null) {
+         while (parent_class != null) {
             if (parent_class == id_type) {
-               return _ret;
+               isParentCase = true;
+               break;
             }
+            ClassInfo parent_class_info = SymbolTable.get(parent_class);
+            parent_class = parent_class_info.parentClass;
          }
       }
 
-      exp_type = (exp_type == id_type) ? exp_type
-            : SymbolTable.get(currClass).methods.get(currMethod).varparmTypes.get(exp_type);
-
-      if (!(id_type == exp_type)) {
+      if (!(id_type == exp_type || isParentCase)) {
          typeError();
       }
 
@@ -434,16 +449,24 @@ public class GJDepthFirst implements GJVisitor<String, String> {
          }
       }
 
-      if (!(arr_type == "int[]")) {
-         typeError();
-      }
+      String arr_ret_type = "int";
 
       if (!(index_type == "int")) {
          typeError();
+         arr_ret_type = "error";
       }
 
-      if (!(exp_type == "int")) {
+      if (!(arr_type == "int[]")) {
          typeError();
+         arr_ret_type = "error";
+      }
+
+      if (arr_ret_type == "error") {
+         typeError();
+      } else {
+         if (!(exp_type == "int")) {
+            typeError();
+         }
       }
 
       return _ret;
@@ -459,17 +482,47 @@ public class GJDepthFirst implements GJVisitor<String, String> {
     */
    public String visit(FieldStoreStatement n, String argu) {
       String _ret = null;
-      String class_type = SymbolTable.get(currClass).methods.get(currMethod).varparmTypes.get(n.f0.accept(this, argu));
-      n.f1.accept(this, argu);
-      String field_type = SymbolTable.get(class_type).fieldTypes.get(n.f2.accept(this, argu));
-      n.f3.accept(this, argu);
-      String expr_type = n.f4.accept(this, argu);
-      n.f5.accept(this, argu);
 
-      if (!(field_type == expr_type)) {
+      String class_type = n.f0.accept(this, argu);
+      if (SymbolTable.get(currClass).methods.get(currMethod).varparmTypes.containsKey(class_type)) {
+         class_type = SymbolTable.get(currClass).methods.get(currMethod).varparmTypes.get(class_type);
+      } else if (SymbolTable.get(currClass).fieldTypes.containsKey(class_type)) {
+         class_type = SymbolTable.get(currClass).fieldTypes.get(class_type);
+      }
+      n.f1.accept(this, argu);
+      String field_type = null;
+      if (SymbolTable.containsKey(class_type)) {
+         field_type = SymbolTable.get(class_type).fieldTypes.get(n.f2.accept(this, argu));
+      }
+      if (field_type == null) {
          typeError();
       }
+      n.f3.accept(this, argu);
+      String expr_type = n.f4.accept(this, argu);
+      if (SymbolTable.get(currClass).methods.get(currMethod).varparmTypes.containsKey(expr_type)) {
+         expr_type = SymbolTable.get(currClass).methods.get(currMethod).varparmTypes.get(expr_type);
+      } else if (SymbolTable.get(currClass).fieldTypes.containsKey(expr_type)) {
+         expr_type = SymbolTable.get(currClass).fieldTypes.get(expr_type);
+      }
 
+      boolean isParentCase = false;
+
+      if (SymbolTable.containsKey(expr_type)) {
+         ClassInfo class_info = SymbolTable.get(expr_type);
+         String parent_class = class_info.parentClass;
+         while (parent_class != null) {
+            if (parent_class == field_type) {
+               isParentCase = true;
+               break;
+            }
+            ClassInfo parent_class_info = SymbolTable.get(parent_class);
+            parent_class = parent_class_info.parentClass;
+         }
+      }
+      n.f5.accept(this, argu);
+      if (!(field_type == expr_type || isParentCase)) {
+         typeError();
+      }
       return _ret;
    }
 
@@ -497,8 +550,14 @@ public class GJDepthFirst implements GJVisitor<String, String> {
 
       // check if the condition expression is of type boolean
       String cond_type = n.f2.accept(this, argu);
-      cond_type = (cond_type == "boolean") ? cond_type
-            : SymbolTable.get(currClass).methods.get(currMethod).varparmTypes.get(cond_type);
+
+      if (cond_type != "boolean") {
+         if (SymbolTable.get(currClass).methods.get(currMethod).varparmTypes.containsKey(cond_type)) {
+            cond_type = SymbolTable.get(currClass).methods.get(currMethod).varparmTypes.get(cond_type);
+         } else if (SymbolTable.get(currClass).fieldTypes.containsKey(cond_type)) {
+            cond_type = SymbolTable.get(currClass).fieldTypes.get(cond_type);
+         }
+      }
 
       if (cond_type != "boolean") {
          typeError();
@@ -525,8 +584,14 @@ public class GJDepthFirst implements GJVisitor<String, String> {
 
       // check if the condition expression is of type boolean
       String cond_type = n.f2.accept(this, argu);
-      cond_type = (cond_type == "boolean") ? cond_type
-            : SymbolTable.get(currClass).methods.get(currMethod).varparmTypes.get(cond_type);
+
+      if (cond_type != "boolean") {
+         if (SymbolTable.get(currClass).methods.get(currMethod).varparmTypes.containsKey(cond_type)) {
+            cond_type = SymbolTable.get(currClass).methods.get(currMethod).varparmTypes.get(cond_type);
+         } else if (SymbolTable.get(currClass).fieldTypes.containsKey(cond_type)) {
+            cond_type = SymbolTable.get(currClass).fieldTypes.get(cond_type);
+         }
+      }
 
       if (cond_type != "boolean") {
          typeError();
@@ -553,8 +618,14 @@ public class GJDepthFirst implements GJVisitor<String, String> {
 
       // check if the condition expression is of type boolean
       String cond_type = n.f2.accept(this, argu);
-      cond_type = (cond_type == "boolean") ? cond_type
-            : SymbolTable.get(currClass).methods.get(currMethod).varparmTypes.get(cond_type);
+
+      if (cond_type != "boolean") {
+         if (SymbolTable.get(currClass).methods.get(currMethod).varparmTypes.containsKey(cond_type)) {
+            cond_type = SymbolTable.get(currClass).methods.get(currMethod).varparmTypes.get(cond_type);
+         } else if (SymbolTable.get(currClass).fieldTypes.containsKey(cond_type)) {
+            cond_type = SymbolTable.get(currClass).fieldTypes.get(cond_type);
+         }
+      }
 
       if (cond_type != "boolean") {
          typeError();
@@ -765,10 +836,26 @@ public class GJDepthFirst implements GJVisitor<String, String> {
          bop2_type = op2_type;
       }
 
+      String cop1_type = op1_type;
+      String cop2_type = op2_type;
+
+      if (SymbolTable.get(currClass).methods.get(currMethod).varparmTypes.containsKey(op1_type)) {
+         cop1_type = SymbolTable.get(currClass).methods.get(currMethod).varparmTypes.get(op1_type);
+      } else if (SymbolTable.get(currClass).fieldTypes.containsKey(op1_type)) {
+         cop1_type = SymbolTable.get(currClass).fieldTypes.get(op1_type);
+      }
+
+      if (SymbolTable.get(currClass).methods.get(currMethod).varparmTypes.containsKey(op2_type)) {
+         cop2_type = SymbolTable.get(currClass).methods.get(currMethod).varparmTypes.get(op2_type);
+      } else if (SymbolTable.get(currClass).fieldTypes.containsKey(op2_type)) {
+         cop2_type = SymbolTable.get(currClass).fieldTypes.get(op2_type);
+      }
+
       // System.out.println(op1_type + op2_type);
       // System.out.println(iop1_type + iop2_type + bop1_type + bop2_type);
 
-      if (!((iop1_type == "int" && iop2_type == "int") || (bop1_type == "boolean" && bop2_type == "boolean"))) {
+      if (!((iop1_type == "int" && iop2_type == "int") || (bop1_type == "boolean" && bop2_type == "boolean")
+            || (cop1_type == cop2_type))) {
          typeError();
          _ret = "error";
       }
@@ -923,19 +1010,26 @@ public class GJDepthFirst implements GJVisitor<String, String> {
     */
    public String visit(FieldLookup n, String argu) {
       String _ret = null;
-      String id = n.f0.accept(this, argu);
-      String class_type = SymbolTable.get(currClass).methods.get(currMethod).varparmTypes.get(id);
+      String class_type = n.f0.accept(this, argu);
+      if (SymbolTable.get(currClass).methods.get(currMethod).varparmTypes.containsKey(class_type)) {
+         class_type = SymbolTable.get(currClass).methods.get(currMethod).varparmTypes.get(class_type);
+      } else if (SymbolTable.get(currClass).fieldTypes.containsKey(class_type)) {
+         class_type = SymbolTable.get(currClass).fieldTypes.get(class_type);
+      }
       n.f1.accept(this, argu);
       String field_name = n.f2.accept(this, argu);
-      if (SymbolTable.get(class_type).fieldTypes.containsKey(field_name)) {
-         _ret = SymbolTable.get(class_type).fieldTypes.get(field_name);
+      if (SymbolTable.containsKey(class_type)) {
+         if (SymbolTable.get(class_type).fieldTypes.containsKey(field_name)) {
+            _ret = SymbolTable.get(class_type).fieldTypes.get(field_name);
+         }
+         else{
+            typeError();
+            _ret = "error";
+         }
       } else {
          typeError();
          _ret = "error";
       }
-
-      // System.out.println(class_type + " "+field_name + " " + _ret);
-
       return _ret;
    }
 
@@ -1021,8 +1115,9 @@ public class GJDepthFirst implements GJVisitor<String, String> {
     */
    public String visit(MessageSend n, String argu) {
       String _ret = null;
-      currArgList = new ArrayList<>();
+      currArgLists.add(new ArrayList<>());
       String id = n.f0.accept(this, argu);
+      // System.out.println(id);
       MethodInfo method_info;
       String method_id = n.f2.accept(this, argu);
       if (id == "this") {
@@ -1031,11 +1126,20 @@ public class GJDepthFirst implements GJVisitor<String, String> {
       } else if (SymbolTable.containsKey(id)) {
          n.f1.accept(this, argu);
          method_info = SymbolTable.get(id).methods.get(method_id);
+      } else if (SymbolTable.get(currClass).methods.get(currMethod).varparmTypes.containsKey(id)) {
+         id = SymbolTable.get(currClass).methods.get(currMethod).varparmTypes.get(id);
+         n.f1.accept(this, argu);
+         method_info = SymbolTable.get(id).methods.get(method_id);
+      } else if (SymbolTable.get(currClass).fieldTypes.containsKey(id)) {
+         id = SymbolTable.get(currClass).fieldTypes.get(id);
+         n.f1.accept(this, argu);
+         method_info = SymbolTable.get(id).methods.get(method_id);
       } else {
          n.f1.accept(this, argu);
          String class_type = SymbolTable.get(currClass).methods.get(currMethod).varparmTypes.get(id);
          method_info = SymbolTable.get(class_type).methods.get(method_id);
       }
+
       n.f3.accept(this, argu);
       n.f4.accept(this, argu);
       n.f5.accept(this, argu);
@@ -1044,13 +1148,13 @@ public class GJDepthFirst implements GJVisitor<String, String> {
       if (method_info == null) {
          typeError();
          _ret = "error";
-      } else if (method_info.argTypes.size() != currArgList.size()) {
+      } else if (method_info.argTypes.size() != currArgLists.peek().size()) {
          typeError();
-         _ret = "error";
+         _ret = method_info.retType;
       } else {
-         boolean flag = false;
-         for (int i = 0; i < currArgList.size(); i++) {
-            String curr_id = currArgList.get(i);
+         int flag = 0;
+         for (int i = 0; i < currArgLists.peek().size(); i++) {
+            String curr_id = currArgLists.peek().get(i);
             if (method_info.argTypes.get(i) != curr_id) {
                if (SymbolTable.get(currClass).fieldTypes.containsKey(curr_id)) {
                   curr_id = SymbolTable.get(currClass).fieldTypes.get(curr_id);
@@ -1058,22 +1162,33 @@ public class GJDepthFirst implements GJVisitor<String, String> {
                   curr_id = SymbolTable.get(currClass).methods.get(currMethod).varparmTypes.get(curr_id);
                }
             }
-            if (curr_id != method_info.argTypes.get(i)) {
-               flag = true;
+            boolean isParentCase = false;
+            if (SymbolTable.containsKey(curr_id)) {
+               ClassInfo class_info = SymbolTable.get(curr_id);
+               String parent_class = class_info.parentClass;
+               while (parent_class != null) {
+                  if (parent_class == method_info.argTypes.get(i)) {
+                     isParentCase = true;
+                     break;
+                  }
+                  ClassInfo parent_class_info = SymbolTable.get(parent_class);
+                  parent_class = parent_class_info.parentClass;
+               }
+            }
+            if (!(curr_id == method_info.argTypes.get(i) || isParentCase)) {
+               flag += 1;
             }
          }
 
-         // System.out.println(currArgList);
+         // System.out.println(currArgLists.peek());
          // System.out.println(method_info.argTypes);
 
-         if (flag) {
+         if (flag > 0) {
             typeError();
-            _ret = "error";
-         } else {
-            _ret = method_info.retType;
          }
+         _ret = method_info.retType;
       }
-      currArgList = null;
+      currArgLists.pop();
       return _ret;
    }
 
@@ -1083,7 +1198,7 @@ public class GJDepthFirst implements GJVisitor<String, String> {
     */
    public String visit(ExpressionList n, String argu) {
       String _ret = null;
-      currArgList.add(n.f0.accept(this, argu));
+      currArgLists.peek().add(n.f0.accept(this, argu));
       n.f1.accept(this, argu);
       return _ret;
    }
@@ -1095,7 +1210,7 @@ public class GJDepthFirst implements GJVisitor<String, String> {
    public String visit(ExpressionRest n, String argu) {
       String _ret = null;
       n.f0.accept(this, argu);
-      currArgList.add(n.f1.accept(this, argu));
+      currArgLists.peek().add(n.f1.accept(this, argu));
       return _ret;
    }
 
