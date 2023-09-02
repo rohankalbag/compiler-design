@@ -248,7 +248,22 @@ public class GJDepthFirst implements GJVisitor<String, String> {
          actual_ret_type = SymbolTable.get(currClass).fieldTypes.get(actual_ret_type);
       }
 
-      if (ret_type != actual_ret_type) {
+      boolean isParentCase = false;
+
+      if (SymbolTable.containsKey(actual_ret_type)) {
+         ClassInfo class_info = SymbolTable.get(actual_ret_type);
+         String parent_class = class_info.parentClass;
+         while (parent_class != null) {
+            if (parent_class == ret_type) {
+               isParentCase = true;
+               break;
+            }
+            ClassInfo parent_class_info = SymbolTable.get(parent_class);
+            parent_class = parent_class_info.parentClass;
+         }
+      }
+
+      if (!(ret_type == actual_ret_type || isParentCase) || ret_type == "error" || actual_ret_type == "error") {
          typeError();
       }
       n.f11.accept(this, argu);
@@ -400,7 +415,7 @@ public class GJDepthFirst implements GJVisitor<String, String> {
          }
       }
 
-      if (!(id_type == exp_type || isParentCase)) {
+      if (!(id_type == exp_type || isParentCase) || id_type == "error" || exp_type == "error") {
          typeError();
       }
 
@@ -520,7 +535,7 @@ public class GJDepthFirst implements GJVisitor<String, String> {
          }
       }
       n.f5.accept(this, argu);
-      if (!(field_type == expr_type || isParentCase)) {
+      if (!(field_type == expr_type || isParentCase) || field_type == "error" || expr_type == "error") {
          typeError();
       }
       return _ret;
@@ -685,6 +700,14 @@ public class GJDepthFirst implements GJVisitor<String, String> {
       n.f1.accept(this, argu);
       String op2_type = n.f2.accept(this, argu);
 
+      if (currClass == null) {
+         if (!(op1_type == "boolean" && op2_type == "boolean")) {
+            typeError();
+            _ret = "error";
+         }
+         return _ret;
+      }
+
       // perform type checking that both are boolean for || operation
       if (op1_type != "boolean") {
          if (SymbolTable.get(currClass).methods.get(currMethod).varparmTypes.containsKey(op1_type)) {
@@ -719,6 +742,14 @@ public class GJDepthFirst implements GJVisitor<String, String> {
       String op1_type = n.f0.accept(this, argu);
       n.f1.accept(this, argu);
       String op2_type = n.f2.accept(this, argu);
+
+      if (currClass == null) {
+         if (!(op1_type == "boolean" && op2_type == "boolean")) {
+            typeError();
+            _ret = "error";
+         }
+         return _ret;
+      }
 
       // perform type checking that both are boolean for || operation
       if (op1_type != "boolean") {
@@ -755,6 +786,14 @@ public class GJDepthFirst implements GJVisitor<String, String> {
       String op1_type = n.f0.accept(this, argu);
       n.f1.accept(this, argu);
       String op2_type = n.f2.accept(this, argu);
+
+      if (currClass == null) {
+         if (!(op1_type == "int" && op2_type == "int")) {
+            typeError();
+            _ret = "error";
+         }
+         return _ret;
+      }
 
       // perform type checking that both are integers for <= operation
 
@@ -793,6 +832,14 @@ public class GJDepthFirst implements GJVisitor<String, String> {
       n.f1.accept(this, argu);
       String op2_type = n.f2.accept(this, argu);
       String iop1_type = null, iop2_type = null, bop1_type = null, bop2_type = null;
+
+      if (currClass == null) {
+         if (!((op1_type == "boolean" && op2_type == "boolean") || (op1_type == "int" && op2_type == "int"))) {
+            typeError();
+            _ret = "error";
+         }
+         return _ret;
+      }
 
       // perform type checking that both are integers or both are boolean for !=
       // operation
@@ -851,11 +898,41 @@ public class GJDepthFirst implements GJVisitor<String, String> {
          cop2_type = SymbolTable.get(currClass).fieldTypes.get(op2_type);
       }
 
+      boolean OneisParentTwoCase = false;
+
+      if (SymbolTable.containsKey(cop1_type)) {
+         ClassInfo class_info = SymbolTable.get(cop1_type);
+         String parent_class = class_info.parentClass;
+         while (parent_class != null) {
+            if (parent_class == cop2_type) {
+               OneisParentTwoCase = true;
+               break;
+            }
+            ClassInfo parent_class_info = SymbolTable.get(parent_class);
+            parent_class = parent_class_info.parentClass;
+         }
+      }
+
+      boolean TwoisParentOneCase = false;
+
+      if (SymbolTable.containsKey(cop2_type)) {
+         ClassInfo class_info = SymbolTable.get(cop2_type);
+         String parent_class = class_info.parentClass;
+         while (parent_class != null) {
+            if (parent_class == cop1_type) {
+               TwoisParentOneCase = true;
+               break;
+            }
+            ClassInfo parent_class_info = SymbolTable.get(parent_class);
+            parent_class = parent_class_info.parentClass;
+         }
+      }
+
       // System.out.println(op1_type + op2_type);
       // System.out.println(iop1_type + iop2_type + bop1_type + bop2_type);
 
       if (!((iop1_type == "int" && iop2_type == "int") || (bop1_type == "boolean" && bop2_type == "boolean")
-            || (cop1_type == cop2_type))) {
+            || (cop1_type == cop2_type) || OneisParentTwoCase || TwoisParentOneCase) || cop1_type == "error" || cop2_type == "error") {
          typeError();
          _ret = "error";
       }
@@ -873,6 +950,14 @@ public class GJDepthFirst implements GJVisitor<String, String> {
       String op1_type = n.f0.accept(this, argu);
       n.f1.accept(this, argu);
       String op2_type = n.f2.accept(this, argu);
+
+      if (currClass == null) {
+         if (!(op1_type == "int" && op2_type == "int")) {
+            typeError();
+            _ret = "error";
+         }
+         return _ret;
+      }
 
       // perform type checking that both are integers for + operation
       if (op1_type != "int") {
@@ -908,6 +993,14 @@ public class GJDepthFirst implements GJVisitor<String, String> {
       String op1_type = n.f0.accept(this, argu);
       n.f1.accept(this, argu);
       String op2_type = n.f2.accept(this, argu);
+
+      if (currClass == null) {
+         if (!(op1_type == "int" && op2_type == "int")) {
+            typeError();
+            _ret = "error";
+         }
+         return _ret;
+      }
 
       // perform type checking that both are integers for - operation
       if (op1_type != "int") {
@@ -945,6 +1038,15 @@ public class GJDepthFirst implements GJVisitor<String, String> {
       String op2_type = n.f2.accept(this, argu);
 
       // perform type checking that both are integers for * operation
+
+      if (currClass == null) {
+         if (!(op1_type == "int" && op2_type == "int")) {
+            typeError();
+            _ret = "error";
+         }
+         return _ret;
+      }
+
       if (op1_type != "int") {
          if (SymbolTable.get(currClass).methods.get(currMethod).varparmTypes.containsKey(op1_type)) {
             op1_type = SymbolTable.get(currClass).methods.get(currMethod).varparmTypes.get(op1_type);
@@ -978,6 +1080,14 @@ public class GJDepthFirst implements GJVisitor<String, String> {
       String op1_type = n.f0.accept(this, argu);
       n.f1.accept(this, argu);
       String op2_type = n.f2.accept(this, argu);
+
+      if (currClass == null) {
+         if (!(op1_type == "int" && op2_type == "int")) {
+            typeError();
+            _ret = "error";
+         }
+         return _ret;
+      }
 
       // perform type checking that both are integers for / operation
       if (op1_type != "int") {
@@ -1021,8 +1131,7 @@ public class GJDepthFirst implements GJVisitor<String, String> {
       if (SymbolTable.containsKey(class_type)) {
          if (SymbolTable.get(class_type).fieldTypes.containsKey(field_name)) {
             _ret = SymbolTable.get(class_type).fieldTypes.get(field_name);
-         }
-         else{
+         } else {
             typeError();
             _ret = "error";
          }
@@ -1120,10 +1229,7 @@ public class GJDepthFirst implements GJVisitor<String, String> {
       // System.out.println(id);
       MethodInfo method_info;
       String method_id = n.f2.accept(this, argu);
-      if (id == "this") {
-         n.f1.accept(this, argu);
-         method_info = SymbolTable.get(currClass).methods.get(method_id);
-      } else if (SymbolTable.containsKey(id)) {
+      if (SymbolTable.containsKey(id)) {
          n.f1.accept(this, argu);
          method_info = SymbolTable.get(id).methods.get(method_id);
       } else if (SymbolTable.get(currClass).methods.get(currMethod).varparmTypes.containsKey(id)) {
@@ -1137,7 +1243,10 @@ public class GJDepthFirst implements GJVisitor<String, String> {
       } else {
          n.f1.accept(this, argu);
          String class_type = SymbolTable.get(currClass).methods.get(currMethod).varparmTypes.get(id);
-         method_info = SymbolTable.get(class_type).methods.get(method_id);
+         if (class_type == null)
+            method_info = null;
+         else
+            method_info = SymbolTable.get(class_type).methods.get(method_id);
       }
 
       n.f3.accept(this, argu);
@@ -1271,7 +1380,7 @@ public class GJDepthFirst implements GJVisitor<String, String> {
     * f0 -> "this"
     */
    public String visit(ThisExpression n, String argu) {
-      String _ret = "this";
+      String _ret = currClass;
       n.f0.accept(this, argu);
       return _ret;
    }
@@ -1290,6 +1399,15 @@ public class GJDepthFirst implements GJVisitor<String, String> {
       n.f2.accept(this, argu);
 
       String expr_type = n.f3.accept(this, argu);
+
+      if (currClass == null) {
+         if (expr_type != "int") {
+            typeError();
+            _ret = "error";
+         }
+         return _ret;
+      }
+
       // check that array index is integer
       if (expr_type != "int") {
          if (SymbolTable.get(currClass).methods.get(currMethod).varparmTypes.containsKey(expr_type)) {
