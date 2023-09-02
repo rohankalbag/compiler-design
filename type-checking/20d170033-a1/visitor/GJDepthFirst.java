@@ -263,7 +263,7 @@ public class GJDepthFirst implements GJVisitor<String, String> {
          }
       }
 
-      if (!(ret_type == actual_ret_type || isParentCase) || ret_type == "error" || actual_ret_type == "error") {
+      if (!(ret_type == actual_ret_type || isParentCase) || ret_type == "eRr0r" || actual_ret_type == "eRr0r") {
          typeError();
       }
       n.f11.accept(this, argu);
@@ -415,7 +415,7 @@ public class GJDepthFirst implements GJVisitor<String, String> {
          }
       }
 
-      if (!(id_type == exp_type || isParentCase) || id_type == "error" || exp_type == "error") {
+      if (!(id_type == exp_type || isParentCase) || id_type == "eRr0r" || exp_type == "eRr0r") {
          typeError();
       }
 
@@ -468,15 +468,15 @@ public class GJDepthFirst implements GJVisitor<String, String> {
 
       if (!(index_type == "int")) {
          typeError();
-         arr_ret_type = "error";
+         arr_ret_type = "eRr0r";
       }
 
       if (!(arr_type == "int[]")) {
          typeError();
-         arr_ret_type = "error";
+         arr_ret_type = "eRr0r";
       }
 
-      if (arr_ret_type == "error") {
+      if (arr_ret_type == "eRr0r") {
          typeError();
       } else {
          if (!(exp_type == "int")) {
@@ -535,7 +535,7 @@ public class GJDepthFirst implements GJVisitor<String, String> {
          }
       }
       n.f5.accept(this, argu);
-      if (!(field_type == expr_type || isParentCase) || field_type == "error" || expr_type == "error") {
+      if (!(field_type == expr_type || isParentCase) || field_type == "eRr0r" || expr_type == "eRr0r") {
          typeError();
       }
       return _ret;
@@ -703,7 +703,7 @@ public class GJDepthFirst implements GJVisitor<String, String> {
       if (currClass == null) {
          if (!(op1_type == "boolean" && op2_type == "boolean")) {
             typeError();
-            _ret = "error";
+            _ret = "eRr0r";
          }
          return _ret;
       }
@@ -727,7 +727,7 @@ public class GJDepthFirst implements GJVisitor<String, String> {
 
       if (!(op1_type == "boolean" && op2_type == "boolean")) {
          typeError();
-         _ret = "error";
+         _ret = "eRr0r";
       }
       return _ret;
    }
@@ -746,7 +746,7 @@ public class GJDepthFirst implements GJVisitor<String, String> {
       if (currClass == null) {
          if (!(op1_type == "boolean" && op2_type == "boolean")) {
             typeError();
-            _ret = "error";
+            _ret = "eRr0r";
          }
          return _ret;
       }
@@ -770,7 +770,7 @@ public class GJDepthFirst implements GJVisitor<String, String> {
 
       if (!(op1_type == "boolean" && op2_type == "boolean")) {
          typeError();
-         _ret = "error";
+         _ret = "eRr0r";
       }
 
       return _ret;
@@ -790,7 +790,7 @@ public class GJDepthFirst implements GJVisitor<String, String> {
       if (currClass == null) {
          if (!(op1_type == "int" && op2_type == "int")) {
             typeError();
-            _ret = "error";
+            _ret = "eRr0r";
          }
          return _ret;
       }
@@ -815,7 +815,7 @@ public class GJDepthFirst implements GJVisitor<String, String> {
 
       if (!(op1_type == "int" && op2_type == "int")) {
          typeError();
-         _ret = "error";
+         _ret = "eRr0r";
       }
 
       return _ret;
@@ -836,7 +836,7 @@ public class GJDepthFirst implements GJVisitor<String, String> {
       if (currClass == null) {
          if (!((op1_type == "boolean" && op2_type == "boolean") || (op1_type == "int" && op2_type == "int"))) {
             typeError();
-            _ret = "error";
+            _ret = "eRr0r";
          }
          return _ret;
       }
@@ -932,9 +932,9 @@ public class GJDepthFirst implements GJVisitor<String, String> {
       // System.out.println(iop1_type + iop2_type + bop1_type + bop2_type);
 
       if (!((iop1_type == "int" && iop2_type == "int") || (bop1_type == "boolean" && bop2_type == "boolean")
-            || (cop1_type == cop2_type) || OneisParentTwoCase || TwoisParentOneCase) || cop1_type == "error" || cop2_type == "error") {
+            || (cop1_type == cop2_type) || OneisParentTwoCase || TwoisParentOneCase) || cop1_type == "eRr0r" || cop2_type == "eRr0r") {
          typeError();
-         _ret = "error";
+         _ret = "eRr0r";
       }
 
       return _ret;
@@ -954,7 +954,7 @@ public class GJDepthFirst implements GJVisitor<String, String> {
       if (currClass == null) {
          if (!(op1_type == "int" && op2_type == "int")) {
             typeError();
-            _ret = "error";
+            _ret = "eRr0r";
          }
          return _ret;
       }
@@ -978,7 +978,7 @@ public class GJDepthFirst implements GJVisitor<String, String> {
 
       if (!(op1_type == "int" && op2_type == "int")) {
          typeError();
-         _ret = "error";
+         _ret = "eRr0r";
       }
       return _ret;
    }
@@ -997,7 +997,7 @@ public class GJDepthFirst implements GJVisitor<String, String> {
       if (currClass == null) {
          if (!(op1_type == "int" && op2_type == "int")) {
             typeError();
-            _ret = "error";
+            _ret = "eRr0r";
          }
          return _ret;
       }
@@ -1021,7 +1021,7 @@ public class GJDepthFirst implements GJVisitor<String, String> {
 
       if (!(op1_type == "int" && op2_type == "int")) {
          typeError();
-         _ret = "error";
+         _ret = "eRr0r";
       }
       return _ret;
    }
@@ -1042,7 +1042,7 @@ public class GJDepthFirst implements GJVisitor<String, String> {
       if (currClass == null) {
          if (!(op1_type == "int" && op2_type == "int")) {
             typeError();
-            _ret = "error";
+            _ret = "eRr0r";
          }
          return _ret;
       }
@@ -1065,7 +1065,7 @@ public class GJDepthFirst implements GJVisitor<String, String> {
 
       if (!(op1_type == "int" && op2_type == "int")) {
          typeError();
-         _ret = "error";
+         _ret = "eRr0r";
       }
       return _ret;
    }
@@ -1084,7 +1084,7 @@ public class GJDepthFirst implements GJVisitor<String, String> {
       if (currClass == null) {
          if (!(op1_type == "int" && op2_type == "int")) {
             typeError();
-            _ret = "error";
+            _ret = "eRr0r";
          }
          return _ret;
       }
@@ -1108,7 +1108,7 @@ public class GJDepthFirst implements GJVisitor<String, String> {
 
       if (!(op1_type == "int" && op2_type == "int")) {
          typeError();
-         _ret = "error";
+         _ret = "eRr0r";
       }
       return _ret;
    }
@@ -1133,11 +1133,11 @@ public class GJDepthFirst implements GJVisitor<String, String> {
             _ret = SymbolTable.get(class_type).fieldTypes.get(field_name);
          } else {
             typeError();
-            _ret = "error";
+            _ret = "eRr0r";
          }
       } else {
          typeError();
-         _ret = "error";
+         _ret = "eRr0r";
       }
       return _ret;
    }
@@ -1163,7 +1163,7 @@ public class GJDepthFirst implements GJVisitor<String, String> {
 
       if (arr_type != "int[]") {
          typeError();
-         _ret = "error";
+         _ret = "eRr0r";
       }
 
       n.f1.accept(this, argu);
@@ -1180,7 +1180,7 @@ public class GJDepthFirst implements GJVisitor<String, String> {
 
       if (index_type != "int") {
          typeError();
-         _ret = "error";
+         _ret = "eRr0r";
       }
 
       n.f3.accept(this, argu);
@@ -1206,7 +1206,7 @@ public class GJDepthFirst implements GJVisitor<String, String> {
       }
       if (arr_type != "int[]") {
          typeError();
-         _ret = "error";
+         _ret = "eRr0r";
       }
 
       n.f1.accept(this, argu);
@@ -1256,7 +1256,7 @@ public class GJDepthFirst implements GJVisitor<String, String> {
       // check if all types in arglist are same
       if (method_info == null) {
          typeError();
-         _ret = "error";
+         _ret = "eRr0r";
       } else if (method_info.argTypes.size() != currArgLists.peek().size()) {
          typeError();
          _ret = method_info.retType;
@@ -1403,7 +1403,7 @@ public class GJDepthFirst implements GJVisitor<String, String> {
       if (currClass == null) {
          if (expr_type != "int") {
             typeError();
-            _ret = "error";
+            _ret = "eRr0r";
          }
          return _ret;
       }
@@ -1418,7 +1418,7 @@ public class GJDepthFirst implements GJVisitor<String, String> {
       }
       if (expr_type != "int") {
          typeError();
-         _ret = "error";
+         _ret = "eRr0r";
       }
 
       n.f4.accept(this, argu);
@@ -1459,7 +1459,7 @@ public class GJDepthFirst implements GJVisitor<String, String> {
       }
       if (expr_type != "boolean") {
          typeError();
-         _ret = "error";
+         _ret = "eRr0r";
       }
 
       return _ret;
