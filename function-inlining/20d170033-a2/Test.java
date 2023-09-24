@@ -2,7 +2,7 @@ class Test {
     public static void main(String[] arg) {
         Shape s;
         int ret;
-        s = new Shape();
+        s = new Circle(); // call to Circle.foo() inherited from Shape.
         ret = s.foo();
         System.out.println(ret);
     }
@@ -17,7 +17,8 @@ class Shape {
         int ret;
         s = new Circle();
         val = 10;
-        ret = s.computeArea(val);
+        ret = s.computeArea(val); // computeArea() is inlineable since only Circle is instantiated in the
+                                  // hierarchy.
         return ret;
     }
 

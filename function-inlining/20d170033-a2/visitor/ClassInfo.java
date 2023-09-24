@@ -4,46 +4,38 @@ import java.util.*;
 
 class ClassInfo {
     String parentClass;
-    List<String> fields;
+    Map<String, String> fields;
     Map<String, MethodInfo> methods;
 
     public ClassInfo() {
         parentClass = null;
-        fields = new ArrayList<>();
+        fields = new HashMap<>();
         methods = new HashMap<>();
     }
 }
 
 class MethodInfo {
-    List<String> parameters;
-    List<String> variables;
+    Map<String, String> parameters;
+    Map<String, String> variables;
     List<String> body;
 
     public MethodInfo() {
-        parameters = new ArrayList<>();
-        variables = new ArrayList<>();
+        parameters = new HashMap<>();
+        variables = new HashMap<>();
         body = new ArrayList<>();
     }
 }
 
-class CallInfo{
+class CallInfo {
     String callerId;
+    String callerType;
     String calleeMethod;
     List<String> args;
 
-    public CallInfo(String x, String y, List<String> z){
+    public CallInfo(String x, String y, List<String> z, String a) {
         callerId = x;
         calleeMethod = y;
         args = z;
-    }
-}
-
-class TypeAnalysis{
-    List<String> rtaClassInstantiations;
-    List<CallInfo> methodCalls;
-
-    public TypeAnalysis(){
-        rtaClassInstantiations = new ArrayList<>();
-        methodCalls = new ArrayList<>();
+        callerType = a;
     }
 }
