@@ -7,6 +7,7 @@ public class TypeAnalysis {
     String currClass;
     String currMethod;
     List<String> currArgs;
+    int chaCount;
 
     Set<String> rtaClassInstantiations;
     Map<CallInfo, Boolean> methodCalls;
@@ -29,28 +30,6 @@ public class TypeAnalysis {
         return type;
     }
 
-    public boolean isDescendant(String s1, String s2) {
-        ClassInfo c1 = ClassTable.get(s1);
-        while (c1.parentClass != null) {
-            if (s2 == c1.parentClass) {
-                return true;
-            }
-            c1 = ClassTable.get(c1.parentClass);
-        }
-        return false;
-    }
-
-    public boolean containsMethod(String s1, String m1) {
-        ClassInfo c1 = ClassTable.get(s1);
-        while (c1 != null) {
-            if (c1.methods.containsKey(m1)) {
-                return true;
-            }
-            c1 = ClassTable.get(c1.parentClass);
-        }
-        return false;
-    }
-
     public void printDebug() {
         System.out.println("Totally identified " + methodCalls.size() + " method calls");
         for (CallInfo c : methodCalls.keySet()) {
@@ -70,18 +49,22 @@ public class TypeAnalysis {
         }
     }
 
+    public void ClassHierarchyAnalysis(String s1, String m1){
+        ClassInfo c1 = ClassTable.get(s1);
+        if(c1.methods.containsKey(m1) && rtaClassInstantiations.contains(s1)){
+            chaCount += 1;
+        }
+        for(String child : c1.childrenClasses){
+            ClassHierarchyAnalysis(child, m1);
+        }
+    }
+
     public void CheckInlinability() {
         for (CallInfo c : methodCalls.keySet()) {
             String callerStaticType = c.callerType;
-            List<String> possibleDynamicTypes = new ArrayList<>();
-            for (String classInfo : rtaClassInstantiations) {
-                boolean isDesc = isDescendant(classInfo, callerStaticType);
-                boolean hasMethod = containsMethod(classInfo, c.calleeMethod);
-                if (isDesc && hasMethod) {
-                    possibleDynamicTypes.add(classInfo);
-                }
-            }
-            if (possibleDynamicTypes.size() == 1) {
+            chaCount = 0;
+            ClassHierarchyAnalysis(callerStaticType, c.calleeMethod);
+            if (chaCount == 1) {
                 methodCalls.replace(c, true);
             }
         }

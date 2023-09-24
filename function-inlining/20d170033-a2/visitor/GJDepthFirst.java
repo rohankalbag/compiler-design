@@ -187,6 +187,8 @@ public class GJDepthFirst implements GJVisitor<String, String> {
       n.f2.accept(this, argu);
       String parentClass = n.f3.accept(this, argu);
       classInfo.parentClass = parentClass;
+      ClassInfo parentClassInfo = typeAnalysis.ClassTable.get(parentClass);
+      parentClassInfo.childrenClasses.add(typeAnalysis.currClass);
       if (debug) {
          System.out.println("Class parsed : " + typeAnalysis.currClass + " extends : " + parentClass);
       }

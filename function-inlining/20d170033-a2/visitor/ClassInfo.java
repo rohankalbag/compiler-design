@@ -6,11 +6,13 @@ class ClassInfo {
     String parentClass;
     Map<String, String> fields;
     Map<String, MethodInfo> methods;
+    List<String> childrenClasses;
 
     public ClassInfo() {
         parentClass = null;
         fields = new HashMap<>();
         methods = new HashMap<>();
+        childrenClasses = new ArrayList<>();
     }
 }
 
