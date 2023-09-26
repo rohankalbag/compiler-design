@@ -21,6 +21,12 @@ public class VarDeclaration implements Node {
       f2 = n2;
    }
 
+   public VarDeclaration(Type n0, String Identifier){
+      f0 = n0;
+      f1 = new Identifier(new NodeToken(Identifier));
+      f2 = new NodeToken(";");
+   }
+
    public VarDeclaration(Type n0, Identifier n1) {
       f0 = n0;
       f1 = n1;

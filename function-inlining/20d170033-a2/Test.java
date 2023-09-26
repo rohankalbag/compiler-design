@@ -2,20 +2,20 @@ class Test {
     public static void main(String[] arg) {
         Shape s;
         int ret;
-        s = new Square(); // call to Circle.foo() inherited from Shape.
-        ret = s.foo(s);
+        s = new Circle(); // call to Circle.foo() inherited from Shape.
+        ret = s.foo();
         System.out.println(ret);
     }
 }
 
 class Shape {
-    int p;
-
-    public int foo(Shape s) {
+    public int foo() {
+        Shape s;
         Circle c;
         Square sq;
         int val;
         int ret;
+        s = new Circle();
         val = 10;
         ret = s.computeArea(val); // computeArea() is inlineable since only Circle is instantiated in the
                                   // hierarchy.

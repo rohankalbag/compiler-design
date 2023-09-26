@@ -11,9 +11,9 @@ import java.util.*;
  * Provides default methods which visit each node in the tree in depth-first
  * order. Your visitors may extend this class.
  */
-public class GJDepthFirstRTA implements GJVisitor<String, String> {
+public class PrettyPrintDepthFirst implements GJVisitor<String, String> {
     // Auto class visitors--probably don't need to be overridden.
-    private static final boolean debug = true;
+    private static final boolean debug = false;
 
     public String visit(NodeList n, String argu) {
         String _ret = null;
@@ -60,6 +60,10 @@ public class GJDepthFirstRTA implements GJVisitor<String, String> {
     }
 
     public TypeAnalysis typeAnalysis;
+    public List<String> prettyPrint = new ArrayList<>();
+    public int curr_call = 0;
+    public String main_class;
+    public List<String> messageSendArguments;
 
     // User-generated visitor methods below
 
@@ -100,7 +104,9 @@ public class GJDepthFirstRTA implements GJVisitor<String, String> {
         String _ret = null;
         n.f0.accept(this, argu);
         typeAnalysis.currClass = n.f1.accept(this, argu);
+        main_class = typeAnalysis.currClass;
         typeAnalysis.currMethod = "main";
+        prettyPrint.add("class " + typeAnalysis.currClass + " {\n");
         n.f2.accept(this, argu);
         n.f3.accept(this, argu);
         n.f4.accept(this, argu);
@@ -110,13 +116,16 @@ public class GJDepthFirstRTA implements GJVisitor<String, String> {
         n.f8.accept(this, argu);
         n.f9.accept(this, argu);
         n.f10.accept(this, argu);
-        n.f11.accept(this, argu);
+        String args = n.f11.accept(this, argu);
+        prettyPrint.add("\tpublic static void main(String[] " + args + ") {\n");
         n.f12.accept(this, argu);
         n.f13.accept(this, argu);
-        n.f14.accept(this, argu);
+        n.f14.accept(this, "\t");
         n.f15.accept(this, argu);
         n.f16.accept(this, argu);
         n.f17.accept(this, argu);
+        prettyPrint.add("\t}\n");
+        prettyPrint.add("}\n\n");
         typeAnalysis.currClass = null;
         typeAnalysis.currMethod = null;
         return _ret;
@@ -144,10 +153,12 @@ public class GJDepthFirstRTA implements GJVisitor<String, String> {
         String _ret = null;
         n.f0.accept(this, argu);
         typeAnalysis.currClass = n.f1.accept(this, argu);
+        prettyPrint.add("class " + typeAnalysis.currClass + " {\n");
         n.f2.accept(this, argu);
         n.f3.accept(this, argu);
         n.f4.accept(this, argu);
         n.f5.accept(this, argu);
+        prettyPrint.add("}\n\n");
         typeAnalysis.currClass = null;
         typeAnalysis.currMethod = null;
         return _ret;
@@ -168,11 +179,13 @@ public class GJDepthFirstRTA implements GJVisitor<String, String> {
         n.f0.accept(this, argu);
         typeAnalysis.currClass = n.f1.accept(this, argu);
         n.f2.accept(this, argu);
-        n.f3.accept(this, argu);
+        String parentClass = n.f3.accept(this, argu);
+        prettyPrint.add("class " + typeAnalysis.currClass + " extends " + parentClass + " {\n");
         n.f4.accept(this, argu);
         n.f5.accept(this, argu);
         n.f6.accept(this, argu);
         n.f7.accept(this, argu);
+        prettyPrint.add("}\n\n");
         typeAnalysis.currClass = null;
         typeAnalysis.currMethod = null;
         return _ret;
@@ -185,9 +198,14 @@ public class GJDepthFirstRTA implements GJVisitor<String, String> {
      */
     public String visit(VarDeclaration n, String argu) {
         String _ret = null;
-        n.f0.accept(this, argu);
-        n.f1.accept(this, argu);
+        String type = n.f0.accept(this, argu);
+        String id = n.f1.accept(this, argu);
         n.f2.accept(this, argu);
+        if (argu != "\t") {
+            prettyPrint.add("\t" + type + " " + id + ";\n");
+        } else {
+            prettyPrint.add("\t\t" + type + " " + id + ";\n");
+        }
         return _ret;
     }
 
@@ -209,18 +227,43 @@ public class GJDepthFirstRTA implements GJVisitor<String, String> {
     public String visit(MethodDeclaration n, String argu) {
         String _ret = null;
         n.f0.accept(this, argu);
-        n.f1.accept(this, argu);
+        String ret_type = n.f1.accept(this, argu);
         typeAnalysis.currMethod = n.f2.accept(this, argu);
+        prettyPrint.add("\tpublic " + ret_type + " " + typeAnalysis.currMethod + "(");
         n.f3.accept(this, argu);
         n.f4.accept(this, argu);
         n.f5.accept(this, argu);
+        boolean hasInlineCall = false;
+        for (Node m : n.f8.nodes) {
+            if (((Statement) m).f0.which == 1) {
+                AssignmentStatement a = (AssignmentStatement) ((Statement) m).f0.choice;
+                if (a.f2.f0.which == 10) {
+                    hasInlineCall = true;
+                    break;
+                }
+            }
+        }
+        prettyPrint.add(") {\n");
         n.f6.accept(this, argu);
-        n.f7.accept(this, argu);
+        if (hasInlineCall) {
+            for (Node m : typeAnalysis.methodCalls.get(curr_call).inlineDeclaredVars) {
+                n.f7.nodes.add(m);
+            }
+        }
+        n.f7.accept(this, "\t");
+        if (hasInlineCall) {
+            for (Node m : typeAnalysis.methodCalls.get(curr_call).inlineStatements) {
+                n.f8.nodes.add(m);
+            }
+            curr_call += 1;
+        }
         n.f8.accept(this, argu);
         n.f9.accept(this, argu);
-        n.f10.accept(this, argu);
+        String ret_id = n.f10.accept(this, argu);
+        prettyPrint.add("\t\treturn " + ret_id + ";\n");
         n.f11.accept(this, argu);
         n.f12.accept(this, argu);
+        prettyPrint.add("\t}\n\n");
         typeAnalysis.currMethod = null;
         return _ret;
     }
@@ -231,7 +274,8 @@ public class GJDepthFirstRTA implements GJVisitor<String, String> {
      */
     public String visit(FormalParameterList n, String argu) {
         String _ret = null;
-        n.f0.accept(this, argu);
+        String s1 = n.f0.accept(this, argu);
+        prettyPrint.add(s1);
         n.f1.accept(this, argu);
         return _ret;
     }
@@ -242,8 +286,9 @@ public class GJDepthFirstRTA implements GJVisitor<String, String> {
      */
     public String visit(FormalParameter n, String argu) {
         String _ret = null;
-        n.f0.accept(this, argu);
-        n.f1.accept(this, argu);
+        String s1 = n.f0.accept(this, argu);
+        String s2 = n.f1.accept(this, argu);
+        _ret = s1 + " " + s2;
         return _ret;
     }
 
@@ -254,7 +299,8 @@ public class GJDepthFirstRTA implements GJVisitor<String, String> {
     public String visit(FormalParameterRest n, String argu) {
         String _ret = null;
         n.f0.accept(this, argu);
-        n.f1.accept(this, argu);
+        String s2 = n.f1.accept(this, argu);
+        prettyPrint.add(", " + s2);
         return _ret;
     }
 
@@ -332,9 +378,11 @@ public class GJDepthFirstRTA implements GJVisitor<String, String> {
      */
     public String visit(Block n, String argu) {
         String _ret = null;
+        prettyPrint.add(argu + "\t\t{\n");
         n.f0.accept(this, argu);
-        n.f1.accept(this, argu);
+        n.f1.accept(this, argu + "\t");
         n.f2.accept(this, argu);
+        prettyPrint.add(argu + "\t\t}\n");
         return _ret;
     }
 
@@ -346,10 +394,13 @@ public class GJDepthFirstRTA implements GJVisitor<String, String> {
      */
     public String visit(AssignmentStatement n, String argu) {
         String _ret = null;
-        n.f0.accept(this, argu);
+        String id = n.f0.accept(this, argu);
         n.f1.accept(this, argu);
-        n.f2.accept(this, argu);
+        String expr = n.f2.accept(this, argu);
         n.f3.accept(this, argu);
+        if (n.f2.f0.which != 10 || (typeAnalysis.currMethod == "main" && typeAnalysis.currClass == main_class)) {
+            prettyPrint.add(argu + "\t\t" + id + " = " + expr + ";\n");
+        }
         return _ret;
     }
 
@@ -364,13 +415,14 @@ public class GJDepthFirstRTA implements GJVisitor<String, String> {
      */
     public String visit(ArrayAssignmentStatement n, String argu) {
         String _ret = null;
-        n.f0.accept(this, argu);
+        String id1 = n.f0.accept(this, argu);
         n.f1.accept(this, argu);
-        n.f2.accept(this, argu);
+        String id2 = n.f2.accept(this, argu);
         n.f3.accept(this, argu);
         n.f4.accept(this, argu);
-        n.f5.accept(this, argu);
+        String id3 = n.f5.accept(this, argu);
         n.f6.accept(this, argu);
+        prettyPrint.add(argu + "\t\t" + id1 + "[" + id2 + "] = " + id3 + ";\n");
         return _ret;
     }
 
@@ -395,8 +447,9 @@ public class GJDepthFirstRTA implements GJVisitor<String, String> {
         String _ret = null;
         n.f0.accept(this, argu);
         n.f1.accept(this, argu);
-        n.f2.accept(this, argu);
+        String id = n.f2.accept(this, argu);
         n.f3.accept(this, argu);
+        prettyPrint.add(argu + "\t\tif(" + id + ")\n");
         n.f4.accept(this, argu);
         return _ret;
     }
@@ -414,9 +467,11 @@ public class GJDepthFirstRTA implements GJVisitor<String, String> {
         String _ret = null;
         n.f0.accept(this, argu);
         n.f1.accept(this, argu);
-        n.f2.accept(this, argu);
+        String id = n.f2.accept(this, argu);
         n.f3.accept(this, argu);
+        prettyPrint.add(argu + "\t\tif(" + id + ")\n");
         n.f4.accept(this, argu);
+        prettyPrint.add(argu + "\t\telse\n");
         n.f5.accept(this, argu);
         n.f6.accept(this, argu);
         return _ret;
@@ -433,8 +488,9 @@ public class GJDepthFirstRTA implements GJVisitor<String, String> {
         String _ret = null;
         n.f0.accept(this, argu);
         n.f1.accept(this, argu);
-        n.f2.accept(this, argu);
+        String id = n.f2.accept(this, argu);
         n.f3.accept(this, argu);
+        prettyPrint.add(argu + "\t\twhile(" + id + ")\n");
         n.f4.accept(this, argu);
         return _ret;
     }
@@ -450,9 +506,10 @@ public class GJDepthFirstRTA implements GJVisitor<String, String> {
         String _ret = null;
         n.f0.accept(this, argu);
         n.f1.accept(this, argu);
-        n.f2.accept(this, argu);
+        String id = n.f2.accept(this, argu);
         n.f3.accept(this, argu);
         n.f4.accept(this, argu);
+        prettyPrint.add(argu + "\t\tSystem.out.println(" + id + ");\n");
         return _ret;
     }
 
@@ -472,7 +529,7 @@ public class GJDepthFirstRTA implements GJVisitor<String, String> {
      */
     public String visit(Expression n, String argu) {
         String _ret = null;
-        n.f0.accept(this, argu);
+        _ret = n.f0.accept(this, argu);
         return _ret;
     }
 
@@ -483,9 +540,10 @@ public class GJDepthFirstRTA implements GJVisitor<String, String> {
      */
     public String visit(AndExpression n, String argu) {
         String _ret = null;
-        n.f0.accept(this, argu);
+        String id1 = n.f0.accept(this, argu);
         n.f1.accept(this, argu);
-        n.f2.accept(this, argu);
+        String id2 = n.f2.accept(this, argu);
+        _ret = id1 + " && " + id2;
         return _ret;
     }
 
@@ -496,9 +554,10 @@ public class GJDepthFirstRTA implements GJVisitor<String, String> {
      */
     public String visit(OrExpression n, String argu) {
         String _ret = null;
-        n.f0.accept(this, argu);
+        String id1 = n.f0.accept(this, argu);
         n.f1.accept(this, argu);
-        n.f2.accept(this, argu);
+        String id2 = n.f2.accept(this, argu);
+        _ret = id1 + " || " + id2;
         return _ret;
     }
 
@@ -509,9 +568,10 @@ public class GJDepthFirstRTA implements GJVisitor<String, String> {
      */
     public String visit(CompareExpression n, String argu) {
         String _ret = null;
-        n.f0.accept(this, argu);
+        String id1 = n.f0.accept(this, argu);
         n.f1.accept(this, argu);
-        n.f2.accept(this, argu);
+        String id2 = n.f2.accept(this, argu);
+        _ret = id1 + " <= " + id2;
         return _ret;
     }
 
@@ -522,9 +582,10 @@ public class GJDepthFirstRTA implements GJVisitor<String, String> {
      */
     public String visit(NeqExpression n, String argu) {
         String _ret = null;
-        n.f0.accept(this, argu);
+        String id1 = n.f0.accept(this, argu);
         n.f1.accept(this, argu);
-        n.f2.accept(this, argu);
+        String id2 = n.f2.accept(this, argu);
+        _ret = id1 + " != " + id2;
         return _ret;
     }
 
@@ -535,9 +596,10 @@ public class GJDepthFirstRTA implements GJVisitor<String, String> {
      */
     public String visit(PlusExpression n, String argu) {
         String _ret = null;
-        n.f0.accept(this, argu);
+        String id1 = n.f0.accept(this, argu);
         n.f1.accept(this, argu);
-        n.f2.accept(this, argu);
+        String id2 = n.f2.accept(this, argu);
+        _ret = id1 + " + " + id2;
         return _ret;
     }
 
@@ -548,9 +610,10 @@ public class GJDepthFirstRTA implements GJVisitor<String, String> {
      */
     public String visit(MinusExpression n, String argu) {
         String _ret = null;
-        n.f0.accept(this, argu);
+        String id1 = n.f0.accept(this, argu);
         n.f1.accept(this, argu);
-        n.f2.accept(this, argu);
+        String id2 = n.f2.accept(this, argu);
+        _ret = id1 + " - " + id2;
         return _ret;
     }
 
@@ -561,9 +624,10 @@ public class GJDepthFirstRTA implements GJVisitor<String, String> {
      */
     public String visit(TimesExpression n, String argu) {
         String _ret = null;
-        n.f0.accept(this, argu);
+        String id1 = n.f0.accept(this, argu);
         n.f1.accept(this, argu);
-        n.f2.accept(this, argu);
+        String id2 = n.f2.accept(this, argu);
+        _ret = id1 + " * " + id2;
         return _ret;
     }
 
@@ -574,9 +638,10 @@ public class GJDepthFirstRTA implements GJVisitor<String, String> {
      */
     public String visit(DivExpression n, String argu) {
         String _ret = null;
-        n.f0.accept(this, argu);
+        String id1 = n.f0.accept(this, argu);
         n.f1.accept(this, argu);
-        n.f2.accept(this, argu);
+        String id2 = n.f2.accept(this, argu);
+        _ret = id1 + " / " + id2;
         return _ret;
     }
 
@@ -588,10 +653,11 @@ public class GJDepthFirstRTA implements GJVisitor<String, String> {
      */
     public String visit(ArrayLookup n, String argu) {
         String _ret = null;
-        n.f0.accept(this, argu);
+        String id1 = n.f0.accept(this, argu);
         n.f1.accept(this, argu);
-        n.f2.accept(this, argu);
+        String id2 = n.f2.accept(this, argu);
         n.f3.accept(this, argu);
+        _ret = id1 + "[" + id2 + "]";
         return _ret;
     }
 
@@ -602,9 +668,10 @@ public class GJDepthFirstRTA implements GJVisitor<String, String> {
      */
     public String visit(ArrayLength n, String argu) {
         String _ret = null;
-        n.f0.accept(this, argu);
+        String id1 = n.f0.accept(this, argu);
         n.f1.accept(this, argu);
         n.f2.accept(this, argu);
+        _ret = id1 + "." + "length";
         return _ret;
     }
 
@@ -618,12 +685,20 @@ public class GJDepthFirstRTA implements GJVisitor<String, String> {
      */
     public String visit(MessageSend n, String argu) {
         String _ret = null;
-        n.f0.accept(this, argu);
+        String id1 = n.f0.accept(this, argu);
         n.f1.accept(this, argu);
-        n.f2.accept(this, argu);
+        String id2 = n.f2.accept(this, argu);
+        messageSendArguments = new ArrayList<>();
         n.f3.accept(this, argu);
         n.f4.accept(this, argu);
         n.f5.accept(this, argu);
+        _ret = id1 + "." + id2 + "(";
+        for (String s : messageSendArguments) {
+            _ret += s + ", ";
+        }
+        if (messageSendArguments.size() > 0)
+            _ret = _ret.substring(0, _ret.length() - 2);
+        _ret += ")";
         return _ret;
     }
 
@@ -633,7 +708,8 @@ public class GJDepthFirstRTA implements GJVisitor<String, String> {
      */
     public String visit(ArgList n, String argu) {
         String _ret = null;
-        n.f0.accept(this, argu);
+        String id = n.f0.accept(this, argu);
+        messageSendArguments.add(id);
         n.f1.accept(this, argu);
         return _ret;
     }
@@ -645,7 +721,8 @@ public class GJDepthFirstRTA implements GJVisitor<String, String> {
     public String visit(ArgRest n, String argu) {
         String _ret = null;
         n.f0.accept(this, argu);
-        n.f1.accept(this, argu);
+        String id = n.f1.accept(this, argu);
+        messageSendArguments.add(id);
         return _ret;
     }
 
@@ -661,7 +738,7 @@ public class GJDepthFirstRTA implements GJVisitor<String, String> {
      */
     public String visit(PrimaryExpression n, String argu) {
         String _ret = null;
-        n.f0.accept(this, argu);
+        _ret = n.f0.accept(this, argu);
         return _ret;
     }
 
@@ -669,7 +746,7 @@ public class GJDepthFirstRTA implements GJVisitor<String, String> {
      * f0 -> <INTEGER_LITERAL>
      */
     public String visit(IntegerLiteral n, String argu) {
-        String _ret = null;
+        String _ret = n.f0.tokenImage;
         n.f0.accept(this, argu);
         return _ret;
     }
@@ -678,7 +755,7 @@ public class GJDepthFirstRTA implements GJVisitor<String, String> {
      * f0 -> "true"
      */
     public String visit(TrueLiteral n, String argu) {
-        String _ret = null;
+        String _ret = "true";
         n.f0.accept(this, argu);
         return _ret;
     }
@@ -687,7 +764,7 @@ public class GJDepthFirstRTA implements GJVisitor<String, String> {
      * f0 -> "false"
      */
     public String visit(FalseLiteral n, String argu) {
-        String _ret = null;
+        String _ret = "false";
         n.f0.accept(this, argu);
         return _ret;
     }
@@ -705,7 +782,7 @@ public class GJDepthFirstRTA implements GJVisitor<String, String> {
      * f0 -> "this"
      */
     public String visit(ThisExpression n, String argu) {
-        String _ret = null;
+        String _ret = "this";
         n.f0.accept(this, argu);
         return _ret;
     }
@@ -722,8 +799,9 @@ public class GJDepthFirstRTA implements GJVisitor<String, String> {
         n.f0.accept(this, argu);
         n.f1.accept(this, argu);
         n.f2.accept(this, argu);
-        n.f3.accept(this, argu);
+        String id = n.f3.accept(this, argu);
         n.f4.accept(this, argu);
+        _ret = "new int[" + id + "]";
         return _ret;
     }
 
@@ -736,9 +814,10 @@ public class GJDepthFirstRTA implements GJVisitor<String, String> {
     public String visit(AllocationExpression n, String argu) {
         String _ret = null;
         n.f0.accept(this, argu);
-        n.f1.accept(this, argu);
+        String id = n.f1.accept(this, argu);
         n.f2.accept(this, argu);
         n.f3.accept(this, argu);
+        _ret = "new " + id + "()";
         return _ret;
     }
 
@@ -749,7 +828,8 @@ public class GJDepthFirstRTA implements GJVisitor<String, String> {
     public String visit(NotExpression n, String argu) {
         String _ret = null;
         n.f0.accept(this, argu);
-        n.f1.accept(this, argu);
+        String id = n.f1.accept(this, argu);
+        _ret = "!" + id;
         return _ret;
     }
 

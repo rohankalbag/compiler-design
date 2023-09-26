@@ -13,7 +13,7 @@ import java.util.*;
  */
 public class GJDepthFirst implements GJVisitor<String, String> {
    // Auto class visitors--probably don't need to be overridden.
-   private static final boolean debug = true;
+   private static final boolean debug = false;
 
    public String visit(NodeList n, String argu) {
       String _ret = null;
@@ -60,6 +60,7 @@ public class GJDepthFirst implements GJVisitor<String, String> {
    }
 
    public TypeAnalysis typeAnalysis = new TypeAnalysis();
+   public String returnId;
    //
    // User-generated visitor methods below
    //
@@ -181,14 +182,13 @@ public class GJDepthFirst implements GJVisitor<String, String> {
     */
    public String visit(ClassExtendsDeclaration n, String argu) {
       String _ret = null;
-      ClassInfo classInfo = new ClassInfo();
       n.f0.accept(this, argu);
       typeAnalysis.currClass = n.f1.accept(this, argu);
       n.f2.accept(this, argu);
       String parentClass = n.f3.accept(this, argu);
-      classInfo.parentClass = parentClass;
       ClassInfo parentClassInfo = typeAnalysis.ClassTable.get(parentClass);
       parentClassInfo.childrenClasses.add(typeAnalysis.currClass);
+      ClassInfo classInfo = new ClassInfo(parentClassInfo);
       if (debug) {
          System.out.println("Class parsed : " + typeAnalysis.currClass + " extends : " + parentClass);
       }
@@ -252,6 +252,8 @@ public class GJDepthFirst implements GJVisitor<String, String> {
       }
       MethodInfo methodInfo = new MethodInfo();
       typeAnalysis.ClassTable.get(typeAnalysis.currClass).methods.put(typeAnalysis.currMethod, methodInfo);
+      methodInfo.varDec = n.f7;
+      methodInfo.statements = n.f8;
       n.f3.accept(this, argu);
       n.f4.accept(this, argu);
       n.f5.accept(this, argu);
@@ -259,9 +261,10 @@ public class GJDepthFirst implements GJVisitor<String, String> {
       n.f7.accept(this, argu);
       n.f8.accept(this, argu);
       n.f9.accept(this, argu);
-      n.f10.accept(this, argu);
+      methodInfo.returnId = n.f10.accept(this, argu);
       n.f11.accept(this, argu);
       n.f12.accept(this, argu);
+      typeAnalysis.currMethod = null;
       return _ret;
    }
 
@@ -290,6 +293,7 @@ public class GJDepthFirst implements GJVisitor<String, String> {
          System.out.println("\t\tFound parameter : " + id + " with type : " + type);
       }
       curr_method_info.parameters.put(id, type);
+      curr_method_info.param_type.put(id, n.f0);
       return _ret;
    }
 
@@ -392,9 +396,13 @@ public class GJDepthFirst implements GJVisitor<String, String> {
     */
    public String visit(AssignmentStatement n, String argu) {
       String _ret = null;
-      n.f0.accept(this, argu);
+      String id = n.f0.accept(this, argu);
       n.f1.accept(this, argu);
+      if (n.f2.f0.which == 10) {
+         returnId = id;
+      }
       n.f2.accept(this, argu);
+      returnId = null;
       n.f3.accept(this, argu);
       return _ret;
    }
@@ -675,10 +683,12 @@ public class GJDepthFirst implements GJVisitor<String, String> {
       if (debug) {
          System.out.println("\t\tFound call for method : " + methodCall + ", caller : " + id + ", with type : " + type);
          System.out.println("\t\tArglist : " + typeAnalysis.currArgs.toString());
+         System.out.println("\t\tReturn Destination : " + returnId);
       }
       if (typeAnalysis.currMethod != "main") {
          CallInfo callInfo = new CallInfo(id, methodCall, typeAnalysis.currArgs, type);
-         typeAnalysis.methodCalls.put(callInfo, false);
+         callInfo.returnDest = returnId;
+         typeAnalysis.methodCalls.add(callInfo);
       } else if (debug) {
          System.out.println("\t\tIgnoring this call since it was made in public static void main(String args[]){}");
       }
