@@ -885,6 +885,7 @@ public class InlineDepthFirst implements GJVisitor<String, String> {
         String _ret = null;
         n.f0.accept(this, argu);
         String id = n.f1.accept(this, argu);
+        id = (id.split("_"))[1];
         n.f2.accept(this, argu);
         n.f3.accept(this, argu);
         currPriExprChoice = 6;

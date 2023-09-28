@@ -238,7 +238,8 @@ public class PrettyPrintDepthFirst implements GJVisitor<String, String> {
         prettyPrint.add(") {\n");
         List<Boolean> hasInlineCall = new ArrayList<>();
         List<Integer> callIndex = new ArrayList<>();
-        
+        int old_call = curr_call;
+
         for (int i = 0; i < n.f8.nodes.size(); i++) {
             Node m = n.f8.nodes.get(i);
             if (((Statement) m).f0.which == 1) {
@@ -253,10 +254,7 @@ public class PrettyPrintDepthFirst implements GJVisitor<String, String> {
 
         for (int i = 0; i < hasInlineCall.size(); i++) {
             if (hasInlineCall.get(i)) {
-                for (VarDeclaration m : typeAnalysis.methodCalls.get(i).inlineDeclaredVars) {
-                    if (debug) {
-                        System.out.println("new VarDec : " + m.f0.getClass());
-                    }
+                for (VarDeclaration m : typeAnalysis.methodCalls.get(i + old_call).inlineDeclaredVars) {
                     n.f7.nodes.add(m);
                 }
             }
@@ -266,7 +264,7 @@ public class PrettyPrintDepthFirst implements GJVisitor<String, String> {
             if (hasInlineCall.get(i)) {
                 int index = callIndex.get(i);
                 n.f8.nodes.remove(index);
-                for (Statement m : typeAnalysis.methodCalls.get(i).inlineStatements) {
+                for (Statement m : typeAnalysis.methodCalls.get(i + old_call).inlineStatements) {
                     n.f8.nodes.add(index, m);
                     index += 1;
                 }

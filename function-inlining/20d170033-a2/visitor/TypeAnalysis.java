@@ -93,7 +93,7 @@ public class TypeAnalysis {
             subtreeDFS.inlinedBody
                     .add("\t\t" + addMethodPrefix(c, x) + " = " + c.args.get(arg_index) + ";\n");
             AssignmentStatement argAssignment = new AssignmentStatement(
-                    new Identifier(new NodeToken(addMethodPrefix(c, c.devirtualizedMethod.returnId))),
+                    new Identifier(new NodeToken(addMethodPrefix(c, x))),
                     new Expression(new NodeChoice(
                             new PrimaryExpression(new NodeChoice(
                                     new Identifier(new NodeToken(c.args.get(arg_index))),
