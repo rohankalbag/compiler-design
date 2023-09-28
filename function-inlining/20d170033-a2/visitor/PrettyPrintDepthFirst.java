@@ -13,7 +13,7 @@ import java.util.*;
  */
 public class PrettyPrintDepthFirst implements GJVisitor<String, String> {
     // Auto class visitors--probably don't need to be overridden.
-    private static final boolean debug = false;
+    public boolean debug;
 
     public String visit(NodeList n, String argu) {
         String _ret = null;
@@ -64,6 +64,7 @@ public class PrettyPrintDepthFirst implements GJVisitor<String, String> {
     public int curr_call = 0;
     public String main_class;
     public List<String> messageSendArguments;
+    public boolean isInlinable;
 
     // User-generated visitor methods below
 
@@ -233,30 +234,45 @@ public class PrettyPrintDepthFirst implements GJVisitor<String, String> {
         n.f3.accept(this, argu);
         n.f4.accept(this, argu);
         n.f5.accept(this, argu);
-        boolean hasInlineCall = false;
-        for (Node m : n.f8.nodes) {
+        n.f6.accept(this, argu);
+        prettyPrint.add(") {\n");
+        List<Boolean> hasInlineCall = new ArrayList<>();
+        List<Integer> callIndex = new ArrayList<>();
+        
+        for (int i = 0; i < n.f8.nodes.size(); i++) {
+            Node m = n.f8.nodes.get(i);
             if (((Statement) m).f0.which == 1) {
                 AssignmentStatement a = (AssignmentStatement) ((Statement) m).f0.choice;
                 if (a.f2.f0.which == 10) {
-                    hasInlineCall = true;
-                    break;
+                    hasInlineCall.add(typeAnalysis.methodCalls.get(curr_call).isInlinable);
+                    callIndex.add(i);
+                    curr_call += 1;
                 }
             }
         }
-        prettyPrint.add(") {\n");
-        n.f6.accept(this, argu);
-        if (hasInlineCall) {
-            for (Node m : typeAnalysis.methodCalls.get(curr_call).inlineDeclaredVars) {
-                n.f7.nodes.add(m);
+
+        for (int i = 0; i < hasInlineCall.size(); i++) {
+            if (hasInlineCall.get(i)) {
+                for (VarDeclaration m : typeAnalysis.methodCalls.get(i).inlineDeclaredVars) {
+                    if (debug) {
+                        System.out.println("new VarDec : " + m.f0.getClass());
+                    }
+                    n.f7.nodes.add(m);
+                }
             }
         }
         n.f7.accept(this, "\t");
-        if (hasInlineCall) {
-            for (Node m : typeAnalysis.methodCalls.get(curr_call).inlineStatements) {
-                n.f8.nodes.add(m);
+        for (int i = hasInlineCall.size() - 1; i >= 0; i--) {
+            if (hasInlineCall.get(i)) {
+                int index = callIndex.get(i);
+                n.f8.nodes.remove(index);
+                for (Statement m : typeAnalysis.methodCalls.get(i).inlineStatements) {
+                    n.f8.nodes.add(index, m);
+                    index += 1;
+                }
             }
-            curr_call += 1;
         }
+
         n.f8.accept(this, argu);
         n.f9.accept(this, argu);
         String ret_id = n.f10.accept(this, argu);
@@ -398,9 +414,7 @@ public class PrettyPrintDepthFirst implements GJVisitor<String, String> {
         n.f1.accept(this, argu);
         String expr = n.f2.accept(this, argu);
         n.f3.accept(this, argu);
-        if (n.f2.f0.which != 10 || (typeAnalysis.currMethod == "main" && typeAnalysis.currClass == main_class)) {
-            prettyPrint.add(argu + "\t\t" + id + " = " + expr + ";\n");
-        }
+        prettyPrint.add(argu + "\t\t" + id + " = " + expr + ";\n");
         return _ret;
     }
 

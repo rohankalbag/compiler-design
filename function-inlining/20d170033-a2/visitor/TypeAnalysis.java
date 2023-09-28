@@ -22,13 +22,14 @@ public class TypeAnalysis {
     Set<String> rtaClassInstantiations;
     List<CallInfo> methodCalls;
 
-    private static final boolean debug = false;
+    public boolean debug;
 
     public TypeAnalysis() {
         rtaClassInstantiations = new HashSet<>();
         methodCalls = new ArrayList<>();
         ClassTable = new HashMap<>();
         subtreeDFS = new InlineDepthFirst();
+        subtreeDFS.debug = debug;
     }
 
     public String getType(String id) {

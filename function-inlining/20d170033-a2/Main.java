@@ -3,7 +3,7 @@ import visitor.GJDepthFirst;
 import visitor.PrettyPrintDepthFirst;
 
 public class Main {
-    private static final boolean debug = true;
+    private static final boolean debug = false;
 
     public static void main(String[] args) {
         performAnalysis();
@@ -15,9 +15,11 @@ public class Main {
             Node root = parser.Goal();
             GJDepthFirst first_traversal = new GJDepthFirst();
             root.accept(first_traversal, "first");
+            first_traversal.typeAnalysis.debug = debug;
             first_traversal.typeAnalysis.CheckInlinability();
             first_traversal.typeAnalysis.PerformInlining();
             PrettyPrintDepthFirst final_traversal = new PrettyPrintDepthFirst();
+            final_traversal.debug = debug;
             final_traversal.typeAnalysis = first_traversal.typeAnalysis;
             root.accept(final_traversal, "");
             for(String s : final_traversal.prettyPrint){

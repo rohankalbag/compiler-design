@@ -13,7 +13,7 @@ import java.util.*;
  */
 public class InlineDepthFirst implements GJVisitor<String, String> {
     // Auto class visitors--probably don't need to be overridden.
-    private static final boolean debug = false;
+    public boolean debug;
 
     public TypeAnalysis typeAnalysis;
     public CallInfo currCall;
@@ -796,7 +796,7 @@ public class InlineDepthFirst implements GJVisitor<String, String> {
         String _ret = null;
         _ret = n.f0.accept(this, argu);
         currExpr = new PrimaryExpression(new NodeChoice(currPriExpr, currPriExprChoice));
-        currExprChoice = 10;
+        currExprChoice = 11;
         return _ret;
     }
 
