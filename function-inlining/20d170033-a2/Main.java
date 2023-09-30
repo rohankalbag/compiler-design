@@ -22,7 +22,7 @@ public class Main {
             final_traversal.debug = debug;
             final_traversal.typeAnalysis = first_traversal.typeAnalysis;
             root.accept(final_traversal, "");
-            for(String s : final_traversal.prettyPrint){
+            for (String s : final_traversal.prettyPrint) {
                 System.out.print(s);
             }
         } catch (ParseException e) {

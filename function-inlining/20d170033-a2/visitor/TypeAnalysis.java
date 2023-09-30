@@ -8,6 +8,7 @@ import syntaxtree.NodeChoice;
 import syntaxtree.NodeToken;
 import syntaxtree.PrimaryExpression;
 import syntaxtree.Statement;
+import syntaxtree.Type;
 import syntaxtree.Expression;
 import syntaxtree.VarDeclaration;
 
@@ -16,7 +17,11 @@ public class TypeAnalysis {
     String currClass;
     String currMethod;
     List<String> currArgs;
-    int chaCount;
+
+    int rtaCount;
+    List<String> possibleCHAClasses;
+    Set<String> visitedClasses;
+
     InlineDepthFirst subtreeDFS;
 
     Set<String> rtaClassInstantiations;
@@ -25,7 +30,7 @@ public class TypeAnalysis {
     public boolean debug;
 
     public TypeAnalysis() {
-        rtaClassInstantiations = new HashSet<>();
+        rtaClassInstantiations = new LinkedHashSet<>();
         methodCalls = new ArrayList<>();
         ClassTable = new HashMap<>();
         subtreeDFS = new InlineDepthFirst();
@@ -44,29 +49,107 @@ public class TypeAnalysis {
         return type;
     }
 
-    public boolean rtaContainSelfOrParent(String s1, CallInfo c) {
-        boolean flag = rtaClassInstantiations.contains(s1);
-        while (s1 != null) {
-            ClassInfo c1 = ClassTable.get(s1);
-            flag = (rtaClassInstantiations.contains(s1)) ? true : flag;
-            c.devirtualizedClass = (rtaClassInstantiations.contains(s1)) ? s1 : c.devirtualizedClass;
-            s1 = c1.parentClass;
-        }
-        return flag;
-    }
-
-    public void RTA(String s1, String m1, CallInfo c) {
-        ClassInfo c1 = ClassTable.get(s1);
-        if (c1.methods.containsKey(m1) && rtaContainSelfOrParent(s1, c)) {
-            chaCount += 1;
-        }
-        for (String child : c1.childrenClasses) {
-            RTA(child, m1, c);
-        }
-    }
-
     public String addMethodPrefix(CallInfo c, String Identifier) {
         return c.calleeMethod + '_' + Identifier;
+    }
+
+    public void CHA(String s1, String m1, CallInfo c) {
+        ClassInfo c1 = ClassTable.get(s1);
+        if (c1.methods.containsKey(m1)) {
+            MethodInfo mInfo = c1.methods.get(m1);
+            possibleCHAClasses.add(s1);
+            if (debug) {
+                System.out.print("\tChecking CHA for method : " + s1 + "." + m1 + " : ");
+                System.out.print("isOverriden : " + mInfo.isOverriden);
+                System.out.println(" isInherited : " + mInfo.isInherited);
+            }
+        }
+        for (String child : c1.childrenClasses) {
+            CHA(child, m1, c);
+        }
+    }
+
+    public void checkValidRTA(String c, String m, CallInfo ci) {
+        if (possibleCHAClasses.contains(c) && !visitedClasses.contains(c)) {
+            ClassInfo cInfo = ClassTable.get(c);
+            MethodInfo mInfo = cInfo.methods.get(m);
+            if (debug) {
+                System.out.println("\t\tChecking RTA for method : " + c + "." + m);
+            }
+            visitedClasses.add(c);
+            if (!mInfo.isInherited) {
+                rtaCount += 1;
+                ci.devirtualizedClass = c;
+            } else {
+                if (mInfo.isOverriden) {
+                    rtaCount += 1;
+                    ci.devirtualizedClass = c;
+                } else {
+                    if (!visitedClasses.contains(cInfo.parentClass)) {
+                        if (debug) {
+                            System.out.println("\tChecking parent : " + cInfo.parentClass);
+                        }
+                        checkValidRTA(cInfo.parentClass, m, ci);
+                        visitedClasses.add(cInfo.parentClass);
+                    }
+                }
+            }
+        }
+    }
+
+    public void RTA(String m1, CallInfo ci) {
+        List<String> rtaClassList = new ArrayList<>(rtaClassInstantiations);
+        for (String c : rtaClassList) {
+            checkValidRTA(c, m1, ci);
+        }
+    }
+
+    public void CheckInlinability() {
+        if (debug) {
+            System.out.println("Totally identified " + methodCalls.size() + " method calls");
+        }
+        for (CallInfo c : methodCalls) {
+            String callerStaticType = c.callerType;
+            possibleCHAClasses = new ArrayList<>();
+            String oldestAncestor = callerStaticType;
+            ClassInfo currAncestorCI = ClassTable.get(oldestAncestor);
+            while (currAncestorCI.parentClass != null && currAncestorCI.methods.get(c.calleeMethod).isInherited
+                    && !currAncestorCI.methods.get(c.calleeMethod).isOverriden) {
+                oldestAncestor = ClassTable.get(oldestAncestor).parentClass;
+                currAncestorCI = ClassTable.get(oldestAncestor);
+            }
+            CHA(oldestAncestor, c.calleeMethod, c);
+            visitedClasses = new HashSet<>();
+            rtaCount = 0;
+            RTA(c.calleeMethod, c);
+
+            if (debug) {
+                System.out.println("\tRTA Classes:" + rtaClassInstantiations);
+                System.out.print("\tRTA Count : ");
+                System.out.println(rtaCount);
+                System.out.println("\tPossible CHA Classes : " + possibleCHAClasses);
+                System.out.println("\tVisited Classes : " + visitedClasses);
+                System.out.println("\tDevirtualized Class : " + c.devirtualizedClass);
+            }
+
+            if (rtaCount == 1) {
+                c.isInlinable = true;
+                if (debug) {
+                    System.out.print("\tCleared to inline method call : ");
+                    System.out.print(c.callerType + ".");
+                    System.out.print(c.calleeMethod + "(");
+                    System.out.print(c.args);
+                    System.out.print(") : ");
+                    System.out.println("Devirtualized to " + c.devirtualizedClass);
+                }
+            } else if (debug) {
+                System.out.print("\tNot cleared to inline method call : ");
+                System.out.print(c.callerType + ".");
+                System.out.print(c.calleeMethod + "(");
+                System.out.print(c.args);
+                System.out.println(")");
+            }
+        }
     }
 
     public void InlineCall(CallInfo c) {
@@ -81,6 +164,11 @@ public class TypeAnalysis {
         subtreeDFS.currCall = c;
         subtreeDFS.typeAnalysis = this;
         subtreeDFS.inlinedBody = new ArrayList<>();
+        subtreeDFS.inlinedBody
+                .add("\t\t" + c.callerType + " " + addMethodPrefix(c, "this") + ";\n");
+        c.inlineDeclaredVars
+                .add(new VarDeclaration(new Type(new NodeChoice(new Identifier(new NodeToken(c.callerType)), 4)),
+                        addMethodPrefix(c, "this")));
         for (String x : c.devirtualizedMethod.parameters.keySet()) {
             subtreeDFS.inlinedBody
                     .add("\t\t" + c.devirtualizedMethod.parameters.get(x) + " " + addMethodPrefix(c, x) + ";\n");
@@ -88,6 +176,16 @@ public class TypeAnalysis {
                     .add(new VarDeclaration(c.devirtualizedMethod.param_type.get(x), addMethodPrefix(c, x)));
         }
         c.devirtualizedMethod.varDec.accept(subtreeDFS, "declarations");
+        subtreeDFS.inlinedBody
+                .add("\t\t" + addMethodPrefix(c, "this") + " = " + c.callerId + ";\n");
+        AssignmentStatement thisAssignment = new AssignmentStatement(
+                new Identifier(new NodeToken(addMethodPrefix(c, "this"))),
+                new Expression(new NodeChoice(
+                        new PrimaryExpression(new NodeChoice(
+                                new Identifier(new NodeToken(c.callerId)),
+                                3)),
+                        11)));
+        c.inlineStatements.add(new Statement(new NodeChoice(thisAssignment, 1)));
         int arg_index = 0;
         for (String x : c.devirtualizedMethod.parameters.keySet()) {
             subtreeDFS.inlinedBody
@@ -114,35 +212,6 @@ public class TypeAnalysis {
         if (debug) {
             for (String s : subtreeDFS.inlinedBody) {
                 System.out.print(s);
-            }
-        }
-    }
-
-    public void CheckInlinability() {
-        if (debug) {
-            System.out.println("Totally identified " + methodCalls.size() + " method calls");
-        }
-        for (CallInfo c : methodCalls) {
-            String callerStaticType = c.callerType;
-            chaCount = 0;
-            RTA(callerStaticType, c.calleeMethod, c);
-
-            if (chaCount == 1) {
-                c.isInlinable = true;
-                if (debug) {
-                    System.out.print("\tCleared to inline method call : ");
-                    System.out.print(c.callerType + ".");
-                    System.out.print(c.calleeMethod + "(");
-                    System.out.print(c.args);
-                    System.out.print(") : ");
-                    System.out.println("Devirtualized to " + c.devirtualizedClass);
-                }
-            } else if (debug) {
-                System.out.print("\tNot cleared to inline method call : ");
-                System.out.print(c.callerType + ".");
-                System.out.print(c.calleeMethod + "(");
-                System.out.print(c.args);
-                System.out.println(")");
             }
         }
     }

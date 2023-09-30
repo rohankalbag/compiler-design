@@ -848,10 +848,10 @@ public class InlineDepthFirst implements GJVisitor<String, String> {
      * f0 -> "this"
      */
     public String visit(ThisExpression n, String argu) {
-        String _ret = "this";
+        String _ret = typeAnalysis.addMethodPrefix(currCall, "this");
         n.f0.accept(this, argu);
-        currPriExprChoice = 4;
-        currPriExpr = new ThisExpression();
+        currPriExprChoice = 3;
+        currPriExpr = new Identifier(new NodeToken(_ret));
         return _ret;
     }
 

@@ -189,6 +189,7 @@ public class GJDepthFirst implements GJVisitor<String, String> {
       ClassInfo parentClassInfo = typeAnalysis.ClassTable.get(parentClass);
       parentClassInfo.childrenClasses.add(typeAnalysis.currClass);
       ClassInfo classInfo = new ClassInfo(parentClassInfo);
+      classInfo.parentClass = parentClass;
       if (debug) {
          System.out.println("Class parsed : " + typeAnalysis.currClass + " extends : " + parentClass);
       }
@@ -251,6 +252,9 @@ public class GJDepthFirst implements GJVisitor<String, String> {
          System.out.println("\tMethod parsed : " + typeAnalysis.currClass + "." + typeAnalysis.currMethod);
       }
       MethodInfo methodInfo = new MethodInfo();
+      if(typeAnalysis.ClassTable.get(typeAnalysis.currClass).methods.containsKey(typeAnalysis.currMethod)){
+         methodInfo.isOverriden = true;
+      }
       typeAnalysis.ClassTable.get(typeAnalysis.currClass).methods.put(typeAnalysis.currMethod, methodInfo);
       methodInfo.varDec = n.f7;
       methodInfo.statements = n.f8;

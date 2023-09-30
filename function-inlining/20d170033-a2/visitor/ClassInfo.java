@@ -25,7 +25,8 @@ class ClassInfo {
         fields = new HashMap<>();
         methods = new HashMap<>();
         for (String m : c.methods.keySet()) {
-            methods.put(m, c.methods.get(m));
+            MethodInfo x = new MethodInfo(c.methods.get(m));
+            methods.put(m, x);
         }
         for (String m : c.fields.keySet()) {
             methods.put(m, c.methods.get(m));
@@ -36,6 +37,7 @@ class ClassInfo {
 
 class MethodInfo {
     Boolean isOverriden;
+    Boolean isInherited;
     Map<String, String> parameters;
     Map<String, Type> param_type;
     Map<String, String> variables;
@@ -45,9 +47,27 @@ class MethodInfo {
 
     public MethodInfo() {
         isOverriden = false;
+        isInherited = false;
         parameters = new LinkedHashMap<>();
         variables = new HashMap<>();
         param_type = new LinkedHashMap<>();
+    }
+
+    public MethodInfo(MethodInfo k){
+        isOverriden = false;
+        isInherited = true;
+        parameters = new LinkedHashMap<>();
+        variables = new HashMap<>();
+        param_type = new LinkedHashMap<>();
+        for(String s : k.parameters.keySet()){
+            parameters.put(s, k.parameters.get(s));
+        }
+        for(String s : k.variables.keySet()){
+            variables.put(s, k.variables.get(s));
+        }
+        for(String s : k.param_type.keySet()){
+            param_type.put(s, k.param_type.get(s));
+        }
     }
 }
 
