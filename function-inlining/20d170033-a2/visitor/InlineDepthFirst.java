@@ -26,7 +26,8 @@ public class InlineDepthFirst implements GJVisitor<String, String> {
     public int currPriExprChoice;
     public List<String> messageSendArguments;
     public NodeListOptional currArgList;
-    public NodeListOptional currBlockStatementList;
+    // public NodeListOptional currBlockStatementList;
+    public Stack<NodeListOptional> BlockStatementListStack = new Stack<>();
 
     public String visit(NodeList n, String argu) {
         String _ret = null;
@@ -329,7 +330,8 @@ public class InlineDepthFirst implements GJVisitor<String, String> {
         String _ret = null;
         n.f0.accept(this, argu);
         if (argu == "statements") {
-            currCall.inlineStatements.add(new Statement(new NodeChoice(currStatement, currStatementChoice)));
+            if(BlockStatementListStack.size() == 0 && currStatementChoice != 0)
+                currCall.inlineStatements.add(new Statement(new NodeChoice(currStatement, currStatementChoice)));
         }
         return _ret;
     }
@@ -344,16 +346,16 @@ public class InlineDepthFirst implements GJVisitor<String, String> {
         if (argu == "statements") {
             inlinedBody.add("\t\t{\n");
         }
-        currBlockStatementList = new NodeListOptional();
+        BlockStatementListStack.push(new NodeListOptional());
         n.f0.accept(this, argu);
         n.f1.accept(this, argu);
         n.f2.accept(this, argu);
         if (argu == "statements") {
-            currStatementChoice = 0;
             inlinedBody.add("\t\t}\n");
+            NodeListOptional currBlockStatementList = BlockStatementListStack.pop();
+            currStatementChoice = 0;
             currStatement = new Block(currBlockStatementList);
         }
-        currBlockStatementList = null;
         return _ret;
     }
 
@@ -373,8 +375,8 @@ public class InlineDepthFirst implements GJVisitor<String, String> {
             currStatementChoice = 1;
             currStatement = new AssignmentStatement(
                     new Identifier(new NodeToken(id)), new Expression(new NodeChoice(currExpr, currExprChoice)));
-            if (currBlockStatementList != null) {
-                currBlockStatementList.addNode(currStatement);
+            if (BlockStatementListStack.size() > 0) {
+                BlockStatementListStack.peek().addNode(currStatement);
             }
             inlinedBody.add("\t\t" + id + " = " + expr + ";\n");
         }
@@ -393,8 +395,8 @@ public class InlineDepthFirst implements GJVisitor<String, String> {
     public String visit(ArrayAssignmentStatement n, String argu) {
         String _ret = null;
         String id1 = n.f0.accept(this, argu);
-        String id2 = n.f1.accept(this, argu);
-        n.f2.accept(this, argu);
+        n.f1.accept(this, argu);
+        String id2 = n.f2.accept(this, argu);
         n.f3.accept(this, argu);
         n.f4.accept(this, argu);
         String id3 = n.f5.accept(this, argu);
@@ -404,13 +406,13 @@ public class InlineDepthFirst implements GJVisitor<String, String> {
             currStatement = new ArrayAssignmentStatement(
                     new Identifier(new NodeToken(id1)),
                     new Identifier(new NodeToken(id2)),
-                    new Identifier(new NodeToken(typeAnalysis.addMethodPrefix(currCall, id3))));
-            if (currBlockStatementList != null) {
-                currBlockStatementList.addNode(currStatement);
+                    new Identifier(new NodeToken(id3)));
+            if (BlockStatementListStack.size() > 0) {
+                BlockStatementListStack.peek().addNode(currStatement);
             }
             inlinedBody.add("\t\t" + id1 + "["
                     + id2 + "]" + " = "
-                    + typeAnalysis.addMethodPrefix(currCall, id3) + ";\n");
+                    + id3 + ";\n");
         }
         return _ret;
     }
@@ -424,8 +426,8 @@ public class InlineDepthFirst implements GJVisitor<String, String> {
         n.f0.accept(this, argu);
         currStatementChoice = 3;
         currStatement = new IfStatement(new NodeChoice(currStatement, currStatementChoice));
-        if (currBlockStatementList != null) {
-            currBlockStatementList.addNode(currStatement);
+        if (BlockStatementListStack.size() > 0) {
+            BlockStatementListStack.peek().addNode(currStatement);
         }
         return _ret;
     }
@@ -443,13 +445,15 @@ public class InlineDepthFirst implements GJVisitor<String, String> {
         n.f1.accept(this, argu);
         String id1 = n.f2.accept(this, argu);
         n.f3.accept(this, argu);
+        if (argu == "statements") {
+            inlinedBody.add("\t\tif (" + id1 + ")" + "\n");
+        }
         n.f4.accept(this, argu);
         if (argu == "statements") {
             currStatementChoice = 0;
             Statement currState = new Statement(new NodeChoice(currStatement, currStatementChoice));
             currStatement = new IfthenStatement(
                     new Identifier(new NodeToken(id1)), currState);
-            inlinedBody.add("\t\tif (" + id1 + ")" + "\n");
         }
         return _ret;
     }
@@ -507,8 +511,8 @@ public class InlineDepthFirst implements GJVisitor<String, String> {
             Statement currState = new Statement(new NodeChoice(currStatement, currStatementChoice));
             currStatement = new WhileStatement(
                     new Identifier(new NodeToken(id)), currState);
-            if (currBlockStatementList != null) {
-                currBlockStatementList.addNode(currStatement);
+            if (BlockStatementListStack.size() > 0) {
+                BlockStatementListStack.peek().addNode(currStatement);
             }
             inlinedBody.add("\t\twhile (" + id + ")" + "\n");
         }
@@ -530,8 +534,8 @@ public class InlineDepthFirst implements GJVisitor<String, String> {
         if (argu == "statements") {
             currStatementChoice = 5;
             currStatement = new PrintStatement(new Identifier(new NodeToken(id)));
-            if (currBlockStatementList != null) {
-                currBlockStatementList.addNode(currStatement);
+            if (BlockStatementListStack.size() > 0) {
+                BlockStatementListStack.peek().addNode(currStatement);
             }
             inlinedBody.add("\t\tSystem.out.println(" + id + ")" + ";\n");
         }
