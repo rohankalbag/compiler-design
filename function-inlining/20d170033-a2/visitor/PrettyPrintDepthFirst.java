@@ -65,6 +65,7 @@ public class PrettyPrintDepthFirst implements GJVisitor<String, String> {
     public String main_class;
     public List<String> messageSendArguments;
     public boolean isInlinable;
+    public Set<String> inlinedFunctionsInBody;
 
     // User-generated visitor methods below
 
@@ -238,6 +239,7 @@ public class PrettyPrintDepthFirst implements GJVisitor<String, String> {
         prettyPrint.add(") {\n");
         List<Boolean> hasInlineCall = new ArrayList<>();
         List<Integer> callIndex = new ArrayList<>();
+        inlinedFunctionsInBody = new HashSet<>();
         int old_call = curr_call;
 
         for (int i = 0; i < n.f8.nodes.size(); i++) {
@@ -254,8 +256,11 @@ public class PrettyPrintDepthFirst implements GJVisitor<String, String> {
 
         for (int i = 0; i < hasInlineCall.size(); i++) {
             if (hasInlineCall.get(i)) {
-                for (VarDeclaration m : typeAnalysis.methodCalls.get(i + old_call).inlineDeclaredVars) {
-                    n.f7.nodes.add(m);
+                if (!inlinedFunctionsInBody.contains(typeAnalysis.methodCalls.get(i + old_call).calleeMethod)) {
+                    for (VarDeclaration m : typeAnalysis.methodCalls.get(i + old_call).inlineDeclaredVars) {
+                        n.f7.nodes.add(m);
+                    }
+                    inlinedFunctionsInBody.add(typeAnalysis.methodCalls.get(i + old_call).calleeMethod);
                 }
             }
         }

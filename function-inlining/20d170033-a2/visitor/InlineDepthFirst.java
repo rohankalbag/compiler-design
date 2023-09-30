@@ -26,8 +26,8 @@ public class InlineDepthFirst implements GJVisitor<String, String> {
     public int currPriExprChoice;
     public List<String> messageSendArguments;
     public NodeListOptional currArgList;
-    // public NodeListOptional currBlockStatementList;
     public Stack<NodeListOptional> BlockStatementListStack = new Stack<>();
+    public Stack<Boolean> inElse = new Stack<>();
 
     public String visit(NodeList n, String argu) {
         String _ret = null;
@@ -330,8 +330,17 @@ public class InlineDepthFirst implements GJVisitor<String, String> {
         String _ret = null;
         n.f0.accept(this, argu);
         if (argu == "statements") {
-            if(BlockStatementListStack.size() == 0 && currStatementChoice != 0)
-                currCall.inlineStatements.add(new Statement(new NodeChoice(currStatement, currStatementChoice)));
+            if (inElse.size() == 0) {
+                if (BlockStatementListStack.size() == 0 && currStatementChoice != 0) {
+                    currCall.inlineStatements.add(new Statement(new NodeChoice(currStatement, currStatementChoice)));
+                }
+            } else if (inElse.peek() && currStatementChoice == 3) {
+                ;
+            } else {
+                if (BlockStatementListStack.size() == 0 && currStatementChoice != 0) {
+                    currCall.inlineStatements.add(new Statement(new NodeChoice(currStatement, currStatementChoice)));
+                }
+            }
         }
         return _ret;
     }
@@ -482,7 +491,9 @@ public class InlineDepthFirst implements GJVisitor<String, String> {
         if (argu == "statements") {
             inlinedBody.add("\t\telse" + "\n");
         }
+        inElse.push(true);
         n.f6.accept(this, argu);
+        inElse.pop();
         Statement currState2 = new Statement(new NodeChoice(currStatement, currStatementChoice));
         if (argu == "statements") {
             currStatementChoice = 1;
