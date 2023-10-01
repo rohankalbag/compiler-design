@@ -14,6 +14,7 @@ public class Main {
             MiniJavaParser parser = new MiniJavaParser(System.in);
             Node root = parser.Goal();
             GJDepthFirst first_traversal = new GJDepthFirst();
+            first_traversal.debug = debug;
             root.accept(first_traversal, "first");
             first_traversal.typeAnalysis.debug = debug;
             first_traversal.typeAnalysis.CheckInlinability();

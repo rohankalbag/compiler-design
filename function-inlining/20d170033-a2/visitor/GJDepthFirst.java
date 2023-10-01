@@ -13,7 +13,7 @@ import java.util.*;
  */
 public class GJDepthFirst implements GJVisitor<String, String> {
    // Auto class visitors--probably don't need to be overridden.
-   private static final boolean debug = false;
+   public boolean debug;
 
    public String visit(NodeList n, String argu) {
       String _ret = null;

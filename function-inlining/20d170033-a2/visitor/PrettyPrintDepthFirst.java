@@ -62,10 +62,12 @@ public class PrettyPrintDepthFirst implements GJVisitor<String, String> {
     public TypeAnalysis typeAnalysis;
     public List<String> prettyPrint = new ArrayList<>();
     public int curr_call = 0;
+    public int old_call;
     public String main_class;
     public List<String> messageSendArguments;
     public boolean isInlinable;
     public Set<String> inlinedFunctionsInBody;
+    List<Boolean> hasInlineCall;
 
     // User-generated visitor methods below
 
@@ -226,6 +228,7 @@ public class PrettyPrintDepthFirst implements GJVisitor<String, String> {
      * f11 -> ";"
      * f12 -> "}"
      */
+
     public String visit(MethodDeclaration n, String argu) {
         String _ret = null;
         n.f0.accept(this, argu);
@@ -237,21 +240,15 @@ public class PrettyPrintDepthFirst implements GJVisitor<String, String> {
         n.f5.accept(this, argu);
         n.f6.accept(this, argu);
         prettyPrint.add(") {\n");
-        List<Boolean> hasInlineCall = new ArrayList<>();
-        List<Integer> callIndex = new ArrayList<>();
+        hasInlineCall = new ArrayList<>();
         inlinedFunctionsInBody = new HashSet<>();
-        int old_call = curr_call;
+        old_call = curr_call;
 
-        for (int i = 0; i < n.f8.nodes.size(); i++) {
-            Node m = n.f8.nodes.get(i);
-            if (((Statement) m).f0.which == 1) {
-                AssignmentStatement a = (AssignmentStatement) ((Statement) m).f0.choice;
-                if (a.f2.f0.which == 10) {
-                    hasInlineCall.add(typeAnalysis.methodCalls.get(curr_call).isInlinable);
-                    callIndex.add(i);
-                    curr_call += 1;
-                }
-            }
+        recursiveInlineCheck(n.f8);
+
+        if (debug) {
+            System.out.print("curr_method: " + typeAnalysis.currMethod + "\n");
+            System.out.println("\thasInlineCall: " + hasInlineCall);
         }
 
         for (int i = 0; i < hasInlineCall.size(); i++) {
@@ -264,18 +261,8 @@ public class PrettyPrintDepthFirst implements GJVisitor<String, String> {
                 }
             }
         }
-        n.f7.accept(this, "\t");
-        for (int i = hasInlineCall.size() - 1; i >= 0; i--) {
-            if (hasInlineCall.get(i)) {
-                int index = callIndex.get(i);
-                n.f8.nodes.remove(index);
-                for (Statement m : typeAnalysis.methodCalls.get(i + old_call).inlineStatements) {
-                    n.f8.nodes.add(index, m);
-                    index += 1;
-                }
-            }
-        }
 
+        n.f7.accept(this, "\t");
         n.f8.accept(this, argu);
         n.f9.accept(this, argu);
         String ret_id = n.f10.accept(this, argu);
@@ -285,6 +272,60 @@ public class PrettyPrintDepthFirst implements GJVisitor<String, String> {
         prettyPrint.add("\t}\n\n");
         typeAnalysis.currMethod = null;
         return _ret;
+    }
+
+    public void recursiveInlineCheck(NodeListOptional n) {
+        for (int i = 0; i < n.nodes.size(); i++) {
+            Node m = n.nodes.get(i);
+            if (((Statement) m).f0.which == 1) {
+                AssignmentStatement a = (AssignmentStatement) ((Statement) m).f0.choice;
+                if (a.f2.f0.which == 10) {
+                    if (debug) {
+                        System.out.println("curr_call: " + curr_call);
+                        System.out.println("calleeMethod: " + typeAnalysis.methodCalls.get(curr_call).calleeMethod);
+                        System.out.println("isInlinable: " + typeAnalysis.methodCalls.get(curr_call).isInlinable);
+                        System.out.println("Num of inlineStatements: "
+                                + typeAnalysis.methodCalls.get(curr_call).inlineStatements.size());
+                    }
+                    hasInlineCall.add(typeAnalysis.methodCalls.get(curr_call).isInlinable);
+                    if (typeAnalysis.methodCalls.get(curr_call).isInlinable) {
+                        n.nodes.remove(i);
+                        int curr_i = 0;
+                        for (Statement k : typeAnalysis.methodCalls.get(curr_call).inlineStatements) {
+                            n.nodes.add(i + curr_i, k);
+                            curr_i += 1;
+                        }
+                        if (debug) {
+                            System.out.println("i: " + i);
+                            System.out.println("curr_i: " + curr_i);
+                        }
+                        i += (curr_i - 1);
+                    }
+                    curr_call += 1;
+                }
+            } else if (((Statement) m).f0.which == 0) {
+                Block b = (Block) ((Statement) m).f0.choice;
+                recursiveInlineCheck(b.f1);
+            } else if (((Statement) m).f0.which == 3) {
+                IfStatement c = (IfStatement) ((Statement) m).f0.choice;
+                if (c.f0.which == 1) {
+                    IfthenStatement d = (IfthenStatement) c.f0.choice;
+                    NodeListOptional e = new NodeListOptional(d.f4);
+                    recursiveInlineCheck(e);
+                } else {
+                    IfthenElseStatement d = (IfthenElseStatement) c.f0.choice;
+                    NodeListOptional e = new NodeListOptional(d.f4);
+                    e.nodes.add(d.f6);
+                    recursiveInlineCheck(e);
+                }
+            } else if (((Statement) m).f0.which == 4) {
+                WhileStatement d = (WhileStatement) ((Statement) m).f0.choice;
+                if (d.f4.f0.which == 0) {
+                    Block e = (Block) d.f4.f0.choice;
+                    recursiveInlineCheck(e.f1);
+                }
+            }
+        }
     }
 
     /**
