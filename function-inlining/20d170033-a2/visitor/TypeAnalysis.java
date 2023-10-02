@@ -50,7 +50,7 @@ public class TypeAnalysis {
     }
 
     public String addMethodPrefix(CallInfo c, String Identifier) {
-        return c.calleeMethod + '_' + Identifier;
+        return c.devirtualizedClass + '_' + c.callerId + '_' + c.calleeMethod + '_' + Identifier;
     }
 
     public void CHA(String s1, String m1, CallInfo c) {

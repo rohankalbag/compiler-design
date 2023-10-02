@@ -751,7 +751,8 @@ public class InlineDepthFirst implements GJVisitor<String, String> {
         String id1 = n.f0.accept(this, argu);
         n.f1.accept(this, argu);
         String id2 = n.f2.accept(this, argu);
-        id2 = (id2.split("_"))[1];
+        String [] temp = id2.split("_");
+        id2 = temp[temp.length - 1];
         messageSendArguments = new ArrayList<>();
         currArgList = new NodeListOptional();
         n.f3.accept(this, argu);
@@ -900,7 +901,8 @@ public class InlineDepthFirst implements GJVisitor<String, String> {
         String _ret = null;
         n.f0.accept(this, argu);
         String id = n.f1.accept(this, argu);
-        id = (id.split("_"))[1];
+        String [] temp = id.split("_");
+        id = temp[temp.length - 1];
         n.f2.accept(this, argu);
         n.f3.accept(this, argu);
         currPriExprChoice = 6;

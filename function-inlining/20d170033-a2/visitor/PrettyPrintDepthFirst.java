@@ -253,11 +253,19 @@ public class PrettyPrintDepthFirst implements GJVisitor<String, String> {
 
         for (int i = 0; i < hasInlineCall.size(); i++) {
             if (hasInlineCall.get(i)) {
-                if (!inlinedFunctionsInBody.contains(typeAnalysis.methodCalls.get(i + old_call).calleeMethod)) {
-                    for (VarDeclaration m : typeAnalysis.methodCalls.get(i + old_call).inlineDeclaredVars) {
+                CallInfo c = typeAnalysis.methodCalls.get(i + old_call);
+                if (debug) {
+                    System.out.println("curr_call: " + (i + old_call));
+                    System.out.println("calleeMethod: " + c.calleeMethod);
+                    System.out.println("isInlinable: " + c.isInlinable);
+                    System.out.println("Num of inlineVarDec: "
+                            + c.inlineDeclaredVars.size());
+                }
+                if (!inlinedFunctionsInBody.contains(c.devirtualizedClass + '_' + c.callerId + '_' + c.calleeMethod)) {
+                    for (VarDeclaration m : c.inlineDeclaredVars) {
                         n.f7.nodes.add(m);
                     }
-                    inlinedFunctionsInBody.add(typeAnalysis.methodCalls.get(i + old_call).calleeMethod);
+                    inlinedFunctionsInBody.add(c.devirtualizedClass + '_' + c.callerId + '_' + c.calleeMethod);
                 }
             }
         }
