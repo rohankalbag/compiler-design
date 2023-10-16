@@ -6,7 +6,7 @@ class InterferenceGraph {
     public Map<String, Set<String>> adjList;
     public Map<String, Integer> degree;
     public Map<String, String> typeMap;
-    public Map<String, Integer> regMap;
+    public Map<String, Integer> regColors;
 
     public InterferenceGraph() {
         adjList = new HashMap<>();
@@ -60,15 +60,21 @@ class InterferenceGraph {
 public class RegAlloc {
     public int maxReg;
     public InterferenceGraph currInterferenceGraph;
+    public int spillCount;
+    public int currSpill;
+    public Map<String, String> registerMap;
     public boolean DEBUG = true;
 
     public RegAlloc(int maxReg) {
         currInterferenceGraph = new InterferenceGraph();
         this.maxReg = maxReg;
+        spillCount = 0;
+        currSpill = 0;
+        registerMap = new HashMap<>();
     }
 
     public void performKempeHeuristic() {
-        currInterferenceGraph.regMap = new HashMap<>();
+        currInterferenceGraph.regColors = new HashMap<>();
         Stack<String> kempeStack = new Stack<>();
         InterferenceGraph kempeGraph = new InterferenceGraph(currInterferenceGraph);
         boolean SomethingChanged = true;
@@ -117,14 +123,14 @@ public class RegAlloc {
             Set<String> neighbours = currInterferenceGraph.adjList.get(node);
             Set<Integer> neighbourRegs = new HashSet<>();
             for (String neighbour : neighbours) {
-                if (currInterferenceGraph.regMap.containsKey(neighbour)) {
-                    neighbourRegs.add(currInterferenceGraph.regMap.get(neighbour));
+                if (currInterferenceGraph.regColors.containsKey(neighbour)) {
+                    neighbourRegs.add(currInterferenceGraph.regColors.get(neighbour));
                 }
             }
             boolean regAssigned = false;
             for (int i = 1; i <= maxReg; i++) {
                 if (!neighbourRegs.contains(i)) {
-                    currInterferenceGraph.regMap.put(node, i);
+                    currInterferenceGraph.regColors.put(node, i);
                     if (DEBUG) {
                         System.out.println("Assigning " + node + " to r" + i);
                     }
@@ -133,7 +139,8 @@ public class RegAlloc {
                 }
             }
             if (!regAssigned) {
-                currInterferenceGraph.regMap.put(node, -1);
+                currInterferenceGraph.regColors.put(node, -1);
+                spillCount++;
                 if (DEBUG) {
                     System.out.println("Assigning " + node + " to spill into memory");
                 }

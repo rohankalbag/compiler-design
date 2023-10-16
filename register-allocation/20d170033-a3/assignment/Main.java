@@ -19,10 +19,17 @@ public class Main {
 
          // Result Map contains a mapping from statements to live variables at that statement
          HashMap<Node, Set<String>> resultMap = ra.getResultMap();
-         root.accept(new InterferenceGraphCreator(resultMap));
 
          // Assignment Starts here
          // You can write your own custom visitor(s)
+
+         InterferenceGraphCreator kempeVisitor = new InterferenceGraphCreator(resultMap);
+         root.accept(kempeVisitor);
+
+         PrettyPrint prettyPrintVisitor = new PrettyPrint(kempeVisitor.classInfoMap);
+         root.accept(prettyPrintVisitor, 0);
+         prettyPrintVisitor.printCode();
+
       }
       catch (ParseException e) {
          System.out.println(e.toString());

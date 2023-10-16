@@ -18,10 +18,10 @@ public class InterferenceGraphCreator implements GJNoArguVisitor<String> {
    String currentMethod;
    String currentClass;
 
-   Map<String, ClassInfo> classInfoMap = new LinkedHashMap<>();
+   public Map<String, ClassInfo> classInfoMap = new LinkedHashMap<>();
    RegAlloc currentMethodRegAlloc;
 
-   public static boolean DEBUG = true;
+   public static boolean DEBUG = false;
 
    public void addConflicts(Set<String> liveSet) {
       if (liveSet.size() > 1) {
@@ -151,6 +151,7 @@ public class InterferenceGraphCreator implements GJNoArguVisitor<String> {
       MethodInfo currMethodInfo = new MethodInfo();
       currClassInfo.methods.put(currentMethod, currMethodInfo);
       currentMethodRegAlloc = new RegAlloc(maxReg);
+      currentMethodRegAlloc.DEBUG = DEBUG;
       n.f7.accept(this);
       n.f8.accept(this);
       n.f9.accept(this);
@@ -165,8 +166,6 @@ public class InterferenceGraphCreator implements GJNoArguVisitor<String> {
       currMethodInfo.methodRegAlloc = currentMethodRegAlloc;
       if (DEBUG) {
          System.out.println("Interference Graph Created for: " + currentClass + "::" + currentMethod);
-      }
-      if (DEBUG) {
          System.out.println("Performing Kempe Heuristic");
       }
       currMethodInfo.methodRegAlloc.performKempeHeuristic();
@@ -241,12 +240,14 @@ public class InterferenceGraphCreator implements GJNoArguVisitor<String> {
     * f2 -> ";"
     */
    public String visit(VarDeclaration n) {
-      if (DEBUG) {
-         if (resultMap.containsKey(n)) {
+      if (resultMap.containsKey(n)) {
+         if (DEBUG) {
             System.out.println("\tVarDeclaration : " + resultMap.get(n));
-            Set<String> liveSet = resultMap.get(n);
-            addConflicts(liveSet);
-         } else {
+         }
+         Set<String> liveSet = resultMap.get(n);
+         addConflicts(liveSet);
+      } else {
+         if (DEBUG) {
             System.err.println("\tLivenessQueryStatement missing: " + n);
          }
       }
@@ -290,6 +291,7 @@ public class InterferenceGraphCreator implements GJNoArguVisitor<String> {
       MethodInfo currMethodInfo = new MethodInfo();
       currClassInfo.methods.put(currentMethod, currMethodInfo);
       currentMethodRegAlloc = new RegAlloc(maxReg);
+      currentMethodRegAlloc.DEBUG = DEBUG;
       n.f3.accept(this);
       n.f4.accept(this);
       n.f5.accept(this);
@@ -300,13 +302,15 @@ public class InterferenceGraphCreator implements GJNoArguVisitor<String> {
       n.f10.accept(this);
       n.f11.accept(this);
       n.f12.accept(this);
-      if (DEBUG) {
-         if (resultMap.containsKey(n)) {
+      if (resultMap.containsKey(n)) {
+         if (DEBUG) {
             System.out.println("\tMethod Return : " + resultMap.get(n));
-            Set<String> liveSet = resultMap.get(n);
-            addConflicts(liveSet);
+         }
+         Set<String> liveSet = resultMap.get(n);
+         addConflicts(liveSet);
 
-         } else {
+      } else {
+         if (DEBUG) {
             System.err.println("\tLivenessQueryStatement missing: " + n);
          }
       }
@@ -454,12 +458,14 @@ public class InterferenceGraphCreator implements GJNoArguVisitor<String> {
     * f3 -> ";"
     */
    public String visit(AssignmentStatement n) {
-      if (DEBUG) {
-         if (resultMap.containsKey(n)) {
+      if (resultMap.containsKey(n)) {
+         if (DEBUG) {
             System.out.println("\tAssignmentStatement : " + resultMap.get(n));
-            Set<String> liveSet = resultMap.get(n);
-            addConflicts(liveSet);
-         } else {
+         }
+         Set<String> liveSet = resultMap.get(n);
+         addConflicts(liveSet);
+      } else {
+         if (DEBUG) {
             System.err.println("\tLivenessQueryStatement missing: " + n);
          }
       }
@@ -481,12 +487,14 @@ public class InterferenceGraphCreator implements GJNoArguVisitor<String> {
     * f6 -> ";"
     */
    public String visit(ArrayAssignmentStatement n) {
-      if (DEBUG) {
-         if (resultMap.containsKey(n)) {
+      if (resultMap.containsKey(n)) {
+         if (DEBUG) {
             System.out.println("\tArrayAssignmentStatement : " + resultMap.get(n));
-            Set<String> liveSet = resultMap.get(n);
-            addConflicts(liveSet);
-         } else {
+         }
+         Set<String> liveSet = resultMap.get(n);
+         addConflicts(liveSet);
+      } else {
+         if (DEBUG) {
             System.err.println("\tLivenessQueryStatement missing: " + n);
          }
       }
@@ -510,12 +518,14 @@ public class InterferenceGraphCreator implements GJNoArguVisitor<String> {
     * f5 -> ";"
     */
    public String visit(FieldAssignmentStatement n) {
-      if (DEBUG) {
-         if (resultMap.containsKey(n)) {
+      if (resultMap.containsKey(n)) {
+         if (DEBUG) {
             System.out.println("\tFieldAssignmentStatement : " + resultMap.get(n));
-            Set<String> liveSet = resultMap.get(n);
-            addConflicts(liveSet);
-         } else {
+         }
+         Set<String> liveSet = resultMap.get(n);
+         addConflicts(liveSet);
+      } else {
+         if (DEBUG) {
             System.err.println("\tLivenessQueryStatement missing: " + n);
          }
       }
@@ -547,12 +557,14 @@ public class InterferenceGraphCreator implements GJNoArguVisitor<String> {
     * f4 -> Statement()
     */
    public String visit(IfthenStatement n) {
-      if (DEBUG) {
-         if (resultMap.containsKey(n)) {
+      if (resultMap.containsKey(n)) {
+         if (DEBUG) {
             System.out.println("\tIfthenStatement : " + resultMap.get(n));
-            Set<String> liveSet = resultMap.get(n);
-            addConflicts(liveSet);
-         } else {
+         }
+         Set<String> liveSet = resultMap.get(n);
+         addConflicts(liveSet);
+      } else {
+         if (DEBUG) {
             System.err.println("\tLivenessQueryStatement missing: " + n);
          }
       }
@@ -575,12 +587,14 @@ public class InterferenceGraphCreator implements GJNoArguVisitor<String> {
     * f6 -> Statement()
     */
    public String visit(IfthenElseStatement n) {
-      if (DEBUG) {
-         if (resultMap.containsKey(n)) {
+      if (resultMap.containsKey(n)) {
+         if (DEBUG) {
             System.out.println("\tIfthenElseStatement : " + resultMap.get(n));
-            Set<String> liveSet = resultMap.get(n);
-            addConflicts(liveSet);
-         } else {
+         }
+         Set<String> liveSet = resultMap.get(n);
+         addConflicts(liveSet);
+      } else {
+         if (DEBUG) {
             System.err.println("\tLivenessQueryStatement missing: " + n);
          }
       }
@@ -603,12 +617,14 @@ public class InterferenceGraphCreator implements GJNoArguVisitor<String> {
     * f4 -> Statement()
     */
    public String visit(WhileStatement n) {
-      if (DEBUG) {
-         if (resultMap.containsKey(n)) {
+      if (resultMap.containsKey(n)) {
+         if (DEBUG) {
             System.out.println("\tWhileStatement : " + resultMap.get(n));
-            Set<String> liveSet = resultMap.get(n);
-            addConflicts(liveSet);
-         } else {
+         }
+         Set<String> liveSet = resultMap.get(n);
+         addConflicts(liveSet);
+      } else {
+         if (DEBUG) {
             System.err.println("\tLivenessQueryStatement missing: " + n);
          }
       }
@@ -629,12 +645,14 @@ public class InterferenceGraphCreator implements GJNoArguVisitor<String> {
     * f4 -> ";"
     */
    public String visit(PrintStatement n) {
-      if (DEBUG) {
-         if (resultMap.containsKey(n)) {
+      if (resultMap.containsKey(n)) {
+         if (DEBUG) {
             System.out.println("\tPrintStatement : " + resultMap.get(n));
-            Set<String> liveSet = resultMap.get(n);
-            addConflicts(liveSet);
-         } else {
+         }
+         Set<String> liveSet = resultMap.get(n);
+         addConflicts(liveSet);
+      } else {
+         if (DEBUG) {
             System.err.println("\tLivenessQueryStatement missing: " + n);
          }
       }
@@ -654,12 +672,14 @@ public class InterferenceGraphCreator implements GJNoArguVisitor<String> {
     */
    public String visit(LivenessQueryStatement n) {
       String _ret = null;
-      if (DEBUG) {
-         if (resultMap.containsKey(n)) {
+      if (resultMap.containsKey(n)) {
+         if (DEBUG) {
             System.out.println("\tLivenessQueryStatement : " + resultMap.get(n));
-            Set<String> liveSet = resultMap.get(n);
-            addConflicts(liveSet);
-         } else {
+         }
+         Set<String> liveSet = resultMap.get(n);
+         addConflicts(liveSet);
+      } else {
+         if (DEBUG) {
             System.err.println("\tLivenessQueryStatement missing: " + n);
          }
       }
