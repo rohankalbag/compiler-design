@@ -59,8 +59,9 @@ public class PrettyPrint implements GJVisitor<String, Integer> {
         return null;
     }
 
-    public static boolean DEBUG = true;
+    public static boolean DEBUG = false;
     public List<String> prettyPrint;
+    public List<String> prettyPrintMessageSend;
     public Integer indent;
     public String currentClass;
     public String currentMethod;
@@ -80,6 +81,54 @@ public class PrettyPrint implements GJVisitor<String, Integer> {
 
     public String getTabs(int indent) {
         return "\t".repeat(indent);
+    }
+
+    public String getTypeCasted(String var, String type) {
+        return "((" + type + ") " + var + ")";
+    }
+
+    public String makeLoad(String addr) {
+        return "load(" + addr + ")";
+    }
+
+    public String makeStore(String addr, String val) {
+        return "store(" + addr + ", " + val + ")";
+    }
+
+    public String getBinOp(String id1, String id2, String op) {
+        String _ret = "";
+        ClassInfo classInfo = classInfoMap.get(currentClass);
+        MethodInfo methodInfo = classInfo.methods.get(currentMethod);
+        RegAlloc regAlloc = methodInfo.methodRegAlloc;
+        Map<String, String> typeInfo = regAlloc.currInterferenceGraph.typeMap;
+        if (regAlloc.registerMap.keySet().contains(id1)) {
+            String rid = regAlloc.registerMap.get(id1);
+            String rtype = typeInfo.get(id1);
+            if (rid.charAt(0) == 'r') {
+                _ret += getTypeCasted(rid, rtype);
+            } else {
+                String memAddr = rid.substring(1, rid.length());
+                _ret += getTypeCasted(makeLoad(memAddr), rtype);
+            }
+        } else {
+            _ret += id1;
+        }
+
+        _ret += op;
+
+        if (regAlloc.registerMap.keySet().contains(id2)) {
+            String rid = regAlloc.registerMap.get(id2);
+            String rtype = typeInfo.get(id2);
+            if (rid.charAt(0) == 'r') {
+                _ret += getTypeCasted(rid, rtype);
+            } else {
+                String memAddr = rid.substring(1, rid.length());
+                _ret += getTypeCasted(makeLoad(memAddr), rtype);
+            }
+        } else {
+            _ret += id2;
+        }
+        return _ret;
     }
 
     //
@@ -127,7 +176,7 @@ public class PrettyPrint implements GJVisitor<String, Integer> {
         n.f0.accept(this, argu);
         currentClass = n.f1.accept(this, argu);
         n.f2.accept(this, argu);
-        prettyPrint.add("public class " + currentClass + " {\n");
+        prettyPrint.add("class " + currentClass + " {\n");
         n.f3.accept(this, argu);
         n.f4.accept(this, argu);
         n.f5.accept(this, argu);
@@ -177,7 +226,7 @@ public class PrettyPrint implements GJVisitor<String, Integer> {
         n.f0.accept(this, argu);
         currentClass = n.f1.accept(this, argu);
         n.f2.accept(this, argu);
-        prettyPrint.add("public class " + currentClass + " {\n");
+        prettyPrint.add("class " + currentClass + " {\n");
         n.f3.accept(this, 1);
         n.f4.accept(this, 1);
         n.f5.accept(this, argu);
@@ -203,7 +252,7 @@ public class PrettyPrint implements GJVisitor<String, Integer> {
         n.f2.accept(this, argu);
         String parent = n.f3.accept(this, argu);
         n.f4.accept(this, argu);
-        prettyPrint.add("public class " + currentClass + " extends " + parent + " {\n");
+        prettyPrint.add("class " + currentClass + " extends " + parent + " {\n");
         n.f5.accept(this, 1);
         n.f6.accept(this, 1);
         n.f7.accept(this, argu);
@@ -285,7 +334,19 @@ public class PrettyPrint implements GJVisitor<String, Integer> {
         n.f8.accept(this, argu + 1);
         n.f9.accept(this, argu);
         String retId = n.f10.accept(this, argu);
-        prettyPrint.add(getTabs(argu + 1) + "return " + retId + ";\n");
+        Map<String, String> typeInfo = regAlloc.currInterferenceGraph.typeMap;
+        if (regAlloc.registerMap.keySet().contains(retId)) {
+            String rid = regAlloc.registerMap.get(retId);
+            String rtype = typeInfo.get(retId);
+            if (rid.charAt(0) == 'r') {
+                prettyPrint.add(getTabs(argu + 1) + "return " + getTypeCasted(rid, rtype) + ";\n");
+            } else {
+                String memAddr = rid.substring(1, rid.length());
+                prettyPrint.add(getTabs(argu + 1) + "return " + getTypeCasted(makeLoad(memAddr), rtype) + ";\n");
+            }
+        } else {
+            prettyPrint.add(getTabs(argu + 1) + "return " + retId + ";\n");
+        }
         n.f11.accept(this, argu);
         n.f12.accept(this, argu);
         prettyPrint.add(getTabs(argu) + "}\n");
@@ -418,20 +479,22 @@ public class PrettyPrint implements GJVisitor<String, Integer> {
      */
     public String visit(AssignmentStatement n, Integer argu) {
         String _ret = null;
-        ClassInfo classInfo = classInfoMap.get(currentClass);
-        MethodInfo methodInfo = classInfo.methods.get(currentMethod);
-        RegAlloc regAlloc = methodInfo.methodRegAlloc;
         String id = n.f0.accept(this, argu);
         n.f1.accept(this, argu);
         String expr = n.f2.accept(this, argu);
+        ClassInfo classInfo = classInfoMap.get(currentClass);
+        MethodInfo methodInfo = classInfo.methods.get(currentMethod);
+        RegAlloc regAlloc = methodInfo.methodRegAlloc;
         if (regAlloc.registerMap.keySet().contains(id)) {
-            id = regAlloc.registerMap.get(id);
-            if (id.charAt(0) == 'r') {
-                prettyPrint.add(getTabs(argu) + id + " = (" + expr + ");\n");
+            String rid = regAlloc.registerMap.get(id);
+            if (rid.charAt(0) == 'r') {
+                prettyPrint.add(getTabs(argu) + rid + " = " + expr + ";\n");
             } else {
-                String memAddr = id.substring(1, id.length());
-                prettyPrint.add(getTabs(argu) + "store(" + memAddr + ", (" + expr + "));\n");
+                String memAddr = rid.substring(1, rid.length());
+                prettyPrint.add(getTabs(argu) + makeStore(memAddr, expr) + ";\n");
             }
+        } else {
+            prettyPrint.add(getTabs(argu) + id + " = " + expr + ";\n");
         }
         n.f3.accept(this, argu);
         return _ret;
@@ -447,6 +510,7 @@ public class PrettyPrint implements GJVisitor<String, Integer> {
      * f6 -> ";"
      */
     public String visit(ArrayAssignmentStatement n, Integer argu) {
+        // NO ARRAY OPERATIONS
         String _ret = null;
         n.f0.accept(this, argu);
         n.f1.accept(this, argu);
@@ -467,6 +531,7 @@ public class PrettyPrint implements GJVisitor<String, Integer> {
      * f5 -> ";"
      */
     public String visit(FieldAssignmentStatement n, Integer argu) {
+        // NO FIELD OPERATIONS
         String _ret = null;
         n.f0.accept(this, argu);
         n.f1.accept(this, argu);
@@ -498,9 +563,26 @@ public class PrettyPrint implements GJVisitor<String, Integer> {
         String _ret = null;
         n.f0.accept(this, argu);
         n.f1.accept(this, argu);
-        n.f2.accept(this, argu);
+        String id = n.f2.accept(this, argu);
+        ClassInfo classInfo = classInfoMap.get(currentClass);
+        MethodInfo methodInfo = classInfo.methods.get(currentMethod);
+        RegAlloc regAlloc = methodInfo.methodRegAlloc;
+        Map<String, String> typeInfo = regAlloc.currInterferenceGraph.typeMap;
+        if (regAlloc.registerMap.keySet().contains(id)) {
+            String rid = regAlloc.registerMap.get(id);
+            String rtype = typeInfo.get(id);
+            if (rid.charAt(0) == 'r') {
+                prettyPrint.add(getTabs(argu) + "if (" + getTypeCasted(rid, rtype) + ") {\n");
+            } else {
+                String memAddr = rid.substring(1, rid.length());
+                prettyPrint.add(getTabs(argu) + "if (" + getTypeCasted(makeLoad(memAddr), rtype) + "){\n");
+            }
+        } else {
+            prettyPrint.add(getTabs(argu) + "if (" + id + ") {\n");
+        }
         n.f3.accept(this, argu);
-        n.f4.accept(this, argu);
+        n.f4.accept(this, argu + 1);
+        prettyPrint.add(getTabs(argu) + "}\n");
         return _ret;
     }
 
@@ -517,11 +599,29 @@ public class PrettyPrint implements GJVisitor<String, Integer> {
         String _ret = null;
         n.f0.accept(this, argu);
         n.f1.accept(this, argu);
-        n.f2.accept(this, argu);
+        String id = n.f2.accept(this, argu);
+        ClassInfo classInfo = classInfoMap.get(currentClass);
+        MethodInfo methodInfo = classInfo.methods.get(currentMethod);
+        RegAlloc regAlloc = methodInfo.methodRegAlloc;
+        Map<String, String> typeInfo = regAlloc.currInterferenceGraph.typeMap;
+        if (regAlloc.registerMap.keySet().contains(id)) {
+            String rid = regAlloc.registerMap.get(id);
+            String rtype = typeInfo.get(id);
+            if (rid.charAt(0) == 'r') {
+                prettyPrint.add(getTabs(argu) + "if (" + getTypeCasted(rid, rtype) + ") {\n");
+            } else {
+                String memAddr = rid.substring(1, rid.length());
+                prettyPrint.add(getTabs(argu) + "if (" + getTypeCasted(makeLoad(memAddr), rtype) + "){\n");
+            }
+        } else {
+            prettyPrint.add(getTabs(argu) + "if (" + id + ") {\n");
+        }
         n.f3.accept(this, argu);
-        n.f4.accept(this, argu);
+        n.f4.accept(this, argu + 1);
         n.f5.accept(this, argu);
-        n.f6.accept(this, argu);
+        prettyPrint.add(getTabs(argu) + "} else {\n");
+        n.f6.accept(this, argu + 1);
+        prettyPrint.add(getTabs(argu) + "}\n");
         return _ret;
     }
 
@@ -536,14 +636,31 @@ public class PrettyPrint implements GJVisitor<String, Integer> {
         String _ret = null;
         n.f0.accept(this, argu);
         n.f1.accept(this, argu);
-        n.f2.accept(this, argu);
+        String id = n.f2.accept(this, argu);
+        ClassInfo classInfo = classInfoMap.get(currentClass);
+        MethodInfo methodInfo = classInfo.methods.get(currentMethod);
+        RegAlloc regAlloc = methodInfo.methodRegAlloc;
+        Map<String, String> typeInfo = regAlloc.currInterferenceGraph.typeMap;
+        if (regAlloc.registerMap.keySet().contains(id)) {
+            String rid = regAlloc.registerMap.get(id);
+            String rtype = typeInfo.get(id);
+            if (rid.charAt(0) == 'r') {
+                prettyPrint.add(getTabs(argu) + "while (" + getTypeCasted(rid, rtype) + ") {\n");
+            } else {
+                String memAddr = rid.substring(1, rid.length());
+                prettyPrint.add(getTabs(argu) + "while (" + getTypeCasted(makeLoad(memAddr), rtype) + "){\n");
+            }
+        } else {
+            prettyPrint.add(getTabs(argu) + "while (" + id + ") {\n");
+        }
         n.f3.accept(this, argu);
-        n.f4.accept(this, argu);
+        n.f4.accept(this, argu + 1);
+        prettyPrint.add(getTabs(argu) + "}\n");
         return _ret;
     }
 
     /**
-     * f0 -> "System.out.prIntegerln"
+     * f0 -> "System.out.println"
      * f1 -> "("
      * f2 -> Identifier()
      * f3 -> ")"
@@ -553,7 +670,24 @@ public class PrettyPrint implements GJVisitor<String, Integer> {
         String _ret = null;
         n.f0.accept(this, argu);
         n.f1.accept(this, argu);
-        n.f2.accept(this, argu);
+        String id = n.f2.accept(this, argu);
+        ClassInfo classInfo = classInfoMap.get(currentClass);
+        MethodInfo methodInfo = classInfo.methods.get(currentMethod);
+        RegAlloc regAlloc = methodInfo.methodRegAlloc;
+        Map<String, String> typeInfo = regAlloc.currInterferenceGraph.typeMap;
+        if (regAlloc.registerMap.keySet().contains(id)) {
+            String rid = regAlloc.registerMap.get(id);
+            String rtype = typeInfo.get(id);
+            if (rid.charAt(0) == 'r') {
+                prettyPrint.add(getTabs(argu) + "System.out.println(" + getTypeCasted(rid, rtype) + ");\n");
+            } else {
+                String memAddr = rid.substring(1, rid.length());
+                prettyPrint
+                        .add(getTabs(argu) + "System.out.println(" + getTypeCasted(makeLoad(memAddr), rtype) + ");\n");
+            }
+        } else {
+            prettyPrint.add(getTabs(argu) + "System.out.println(" + id + ");\n");
+        }
         n.f3.accept(this, argu);
         n.f4.accept(this, argu);
         return _ret;
@@ -588,7 +722,7 @@ public class PrettyPrint implements GJVisitor<String, Integer> {
      */
     public String visit(Expression n, Integer argu) {
         String _ret = null;
-        n.f0.accept(this, argu);
+        _ret = n.f0.accept(this, argu);
         return _ret;
     }
 
@@ -598,10 +732,11 @@ public class PrettyPrint implements GJVisitor<String, Integer> {
      * f2 -> Identifier()
      */
     public String visit(AndExpression n, Integer argu) {
-        String _ret = null;
-        n.f0.accept(this, argu);
+        String _ret = "";
+        String id1 = n.f0.accept(this, argu);
         n.f1.accept(this, argu);
-        n.f2.accept(this, argu);
+        String id2 = n.f2.accept(this, argu);
+        _ret = getBinOp(id1, id2, " && ");
         return _ret;
     }
 
@@ -611,10 +746,11 @@ public class PrettyPrint implements GJVisitor<String, Integer> {
      * f2 -> Identifier()
      */
     public String visit(OrExpression n, Integer argu) {
-        String _ret = null;
-        n.f0.accept(this, argu);
+        String _ret = "";
+        String id1 = n.f0.accept(this, argu);
         n.f1.accept(this, argu);
-        n.f2.accept(this, argu);
+        String id2 = n.f2.accept(this, argu);
+        _ret = getBinOp(id1, id2, " || ");
         return _ret;
     }
 
@@ -624,10 +760,11 @@ public class PrettyPrint implements GJVisitor<String, Integer> {
      * f2 -> Identifier()
      */
     public String visit(CompareExpression n, Integer argu) {
-        String _ret = null;
-        n.f0.accept(this, argu);
+        String _ret = "";
+        String id1 = n.f0.accept(this, argu);
         n.f1.accept(this, argu);
-        n.f2.accept(this, argu);
+        String id2 = n.f2.accept(this, argu);
+        _ret = getBinOp(id1, id2, " <= ");
         return _ret;
     }
 
@@ -637,10 +774,11 @@ public class PrettyPrint implements GJVisitor<String, Integer> {
      * f2 -> Identifier()
      */
     public String visit(neqExpression n, Integer argu) {
-        String _ret = null;
-        n.f0.accept(this, argu);
+        String _ret = "";
+        String id1 = n.f0.accept(this, argu);
         n.f1.accept(this, argu);
-        n.f2.accept(this, argu);
+        String id2 = n.f2.accept(this, argu);
+        _ret = getBinOp(id1, id2, " != ");
         return _ret;
     }
 
@@ -650,10 +788,11 @@ public class PrettyPrint implements GJVisitor<String, Integer> {
      * f2 -> Identifier()
      */
     public String visit(PlusExpression n, Integer argu) {
-        String _ret = null;
-        n.f0.accept(this, argu);
+        String _ret = "";
+        String id1 = n.f0.accept(this, argu);
         n.f1.accept(this, argu);
-        n.f2.accept(this, argu);
+        String id2 = n.f2.accept(this, argu);
+        _ret = getBinOp(id1, id2, " + ");
         return _ret;
     }
 
@@ -663,10 +802,11 @@ public class PrettyPrint implements GJVisitor<String, Integer> {
      * f2 -> Identifier()
      */
     public String visit(MinusExpression n, Integer argu) {
-        String _ret = null;
-        n.f0.accept(this, argu);
+        String _ret = "";
+        String id1 = n.f0.accept(this, argu);
         n.f1.accept(this, argu);
-        n.f2.accept(this, argu);
+        String id2 = n.f2.accept(this, argu);
+        _ret = getBinOp(id1, id2, " - ");
         return _ret;
     }
 
@@ -676,10 +816,11 @@ public class PrettyPrint implements GJVisitor<String, Integer> {
      * f2 -> Identifier()
      */
     public String visit(TimesExpression n, Integer argu) {
-        String _ret = null;
-        n.f0.accept(this, argu);
+        String _ret = "";
+        String id1 = n.f0.accept(this, argu);
         n.f1.accept(this, argu);
-        n.f2.accept(this, argu);
+        String id2 = n.f2.accept(this, argu);
+        _ret = getBinOp(id1, id2, " * ");
         return _ret;
     }
 
@@ -689,10 +830,11 @@ public class PrettyPrint implements GJVisitor<String, Integer> {
      * f2 -> Identifier()
      */
     public String visit(DivExpression n, Integer argu) {
-        String _ret = null;
-        n.f0.accept(this, argu);
+        String _ret = "";
+        String id1 = n.f0.accept(this, argu);
         n.f1.accept(this, argu);
-        n.f2.accept(this, argu);
+        String id2 = n.f2.accept(this, argu);
+        _ret = getBinOp(id1, id2, " / ");
         return _ret;
     }
 
@@ -703,6 +845,7 @@ public class PrettyPrint implements GJVisitor<String, Integer> {
      * f3 -> "]"
      */
     public String visit(ArrayLookup n, Integer argu) {
+        // NO ARRAY OPERATIONS
         String _ret = null;
         n.f0.accept(this, argu);
         n.f1.accept(this, argu);
@@ -717,6 +860,7 @@ public class PrettyPrint implements GJVisitor<String, Integer> {
      * f2 -> "length"
      */
     public String visit(ArrayLength n, Integer argu) {
+        // NO ARRAY OPERATIONS
         String _ret = null;
         n.f0.accept(this, argu);
         n.f1.accept(this, argu);
@@ -733,13 +877,37 @@ public class PrettyPrint implements GJVisitor<String, Integer> {
      * f5 -> ")"
      */
     public String visit(MessageSend n, Integer argu) {
-        String _ret = null;
-        n.f0.accept(this, argu);
+        String _ret = "";
+        String id = n.f0.accept(this, argu);
+        ClassInfo classInfo = classInfoMap.get(currentClass);
+        MethodInfo methodInfo = classInfo.methods.get(currentMethod);
+        RegAlloc regAlloc = methodInfo.methodRegAlloc;
+        prettyPrintMessageSend = new ArrayList<>();
+        Map<String, String> typeInfo = regAlloc.currInterferenceGraph.typeMap;
+        if (regAlloc.registerMap.keySet().contains(id)) {
+            String rid = regAlloc.registerMap.get(id);
+            String rtype = typeInfo.get(id);
+            if (rid.charAt(0) == 'r') {
+                prettyPrintMessageSend.add(getTypeCasted(rid, rtype));
+            } else {
+                String memAddr = rid.substring(1, rid.length());
+                prettyPrintMessageSend
+                        .add(getTypeCasted(makeLoad(memAddr), rtype));
+            }
+        } else {
+            prettyPrintMessageSend.add(id);
+        }
         n.f1.accept(this, argu);
-        n.f2.accept(this, argu);
+        String mCall = n.f2.accept(this, argu);
+        prettyPrintMessageSend.add(".");
         n.f3.accept(this, argu);
+        prettyPrintMessageSend.add(mCall + "(");
         n.f4.accept(this, argu);
         n.f5.accept(this, argu);
+        prettyPrintMessageSend.add(")");
+        for (String s : prettyPrintMessageSend) {
+            _ret += s;
+        }
         return _ret;
     }
 
@@ -749,7 +917,24 @@ public class PrettyPrint implements GJVisitor<String, Integer> {
      */
     public String visit(ArgList n, Integer argu) {
         String _ret = null;
-        n.f0.accept(this, argu);
+        String id = n.f0.accept(this, argu);
+        ClassInfo classInfo = classInfoMap.get(currentClass);
+        MethodInfo methodInfo = classInfo.methods.get(currentMethod);
+        RegAlloc regAlloc = methodInfo.methodRegAlloc;
+        Map<String, String> typeInfo = regAlloc.currInterferenceGraph.typeMap;
+        if (regAlloc.registerMap.keySet().contains(id)) {
+            String rid = regAlloc.registerMap.get(id);
+            String rtype = typeInfo.get(id);
+            if (rid.charAt(0) == 'r') {
+                prettyPrintMessageSend.add(getTypeCasted(rid, rtype));
+            } else {
+                String memAddr = rid.substring(1, rid.length());
+                prettyPrintMessageSend
+                        .add(getTypeCasted(makeLoad(memAddr), rtype));
+            }
+        } else {
+            prettyPrintMessageSend.add(id);
+        }
         n.f1.accept(this, argu);
         return _ret;
     }
@@ -761,7 +946,24 @@ public class PrettyPrint implements GJVisitor<String, Integer> {
     public String visit(ArgRest n, Integer argu) {
         String _ret = null;
         n.f0.accept(this, argu);
-        n.f1.accept(this, argu);
+        String id = n.f1.accept(this, argu);
+        ClassInfo classInfo = classInfoMap.get(currentClass);
+        MethodInfo methodInfo = classInfo.methods.get(currentMethod);
+        RegAlloc regAlloc = methodInfo.methodRegAlloc;
+        Map<String, String> typeInfo = regAlloc.currInterferenceGraph.typeMap;
+        if (regAlloc.registerMap.keySet().contains(id)) {
+            String rid = regAlloc.registerMap.get(id);
+            String rtype = typeInfo.get(id);
+            if (rid.charAt(0) == 'r') {
+                prettyPrintMessageSend.add(", " + getTypeCasted(rid, rtype));
+            } else {
+                String memAddr = rid.substring(1, rid.length());
+                prettyPrintMessageSend
+                        .add(", " + getTypeCasted(makeLoad(memAddr), rtype));
+            }
+        } else {
+            prettyPrintMessageSend.add(", " + id);
+        }
         return _ret;
     }
 
@@ -847,6 +1049,7 @@ public class PrettyPrint implements GJVisitor<String, Integer> {
      * f4 -> "]"
      */
     public String visit(ArrayAllocationExpression n, Integer argu) {
+        // NO ARRAY OPERATIONS
         String _ret = null;
         n.f0.accept(this, argu);
         n.f1.accept(this, argu);
@@ -880,7 +1083,23 @@ public class PrettyPrint implements GJVisitor<String, Integer> {
     public String visit(NotExpression n, Integer argu) {
         String _ret = null;
         n.f0.accept(this, argu);
-        _ret = '!' + n.f1.accept(this, argu);
+        String id = n.f1.accept(this, argu);
+        ClassInfo classInfo = classInfoMap.get(currentClass);
+        MethodInfo methodInfo = classInfo.methods.get(currentMethod);
+        RegAlloc regAlloc = methodInfo.methodRegAlloc;
+        Map<String, String> typeInfo = regAlloc.currInterferenceGraph.typeMap;
+        if (regAlloc.registerMap.keySet().contains(id)) {
+            String rid = regAlloc.registerMap.get(id);
+            String rtype = typeInfo.get(id);
+            if (rid.charAt(0) == 'r') {
+                _ret = "!" + getTypeCasted(rid, rtype);
+            } else {
+                String memAddr = rid.substring(1, rid.length());
+                _ret = "!" + getTypeCasted(makeLoad(memAddr), rtype);
+            }
+        } else {
+            _ret = '!' + id;
+        }
         return _ret;
     }
 

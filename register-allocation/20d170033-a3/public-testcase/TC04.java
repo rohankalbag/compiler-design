@@ -35,14 +35,30 @@ class Demo {
         int c;
         boolean f;
         f = true;
+        f = !f;
         a = 5;
         b = 6;
+        z = x + y; 
         if(f){
             c = a + b;
             c = c + a;
+            if(f){
+                c = c + a;
+            }
+            else{
+                c = c + b;
+            }
         }
         else{
             c = x - y;
+            System.out.println(a);
+        }
+        if(f){
+            c = c + a;
+        }
+        while(f){
+            c = c + a;
+            f = false;
         }
         return c;
     }
