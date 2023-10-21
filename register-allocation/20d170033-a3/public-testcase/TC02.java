@@ -16,6 +16,10 @@ class TestTC02 {
         int d;
         int e;
         int t;
+        float x;
+        TestTC02 o;
+        o = new TestTC02();
+        x = o.bar();
         a = 5;
         b = 6;
         c = a + b;
@@ -23,5 +27,13 @@ class TestTC02 {
         e = a - c;
         t = d - e;
         return t;
+    }
+
+    public float bar(){
+        float x;
+        float y;
+        float z;
+        z = x + y;
+        return z;
     }
 }
