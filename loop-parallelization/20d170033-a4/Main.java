@@ -14,6 +14,7 @@ public class Main {
             ParallelizeVisitor<String, String> parallelizeVisitor = new ParallelizeVisitor<>();
             root.accept(parallelizeVisitor, null);
             PrintVisitor<String, String> printVisitor = new PrintVisitor<>();
+            printVisitor.classInfoMap = parallelizeVisitor.classInfoMap;
             root.accept(printVisitor, null);
             printVisitor.printCode();
         } catch (ParseException e) {

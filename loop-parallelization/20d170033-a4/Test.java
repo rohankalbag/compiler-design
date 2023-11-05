@@ -42,8 +42,9 @@ class Operator {
         arr4 = arr1;
         // Non-Parallelizable loop. (arr3 and arr4 can be aliases)
         for (i = 0; i < 99; i = i + 1) {
-            j = i + 1;
-            arr3[i] = arr4[j];
+            j = i*6;
+            k = i*2;
+            arr3[j] = arr4[k];
         }
         return arr4;
     }

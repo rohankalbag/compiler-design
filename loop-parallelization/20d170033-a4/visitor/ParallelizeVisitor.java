@@ -1,66 +1,69 @@
 
 package visitor;
+
 import syntaxtree.*;
 import java.util.*;
 
-public class ParallelizeVisitor<R,A> implements GJVisitor<R,A> {
+public class ParallelizeVisitor<R, A> implements GJVisitor<String, A> {
    //
    // Auto class visitors--probably don't need to be overridden.
    //
-   public R visit(NodeList n, A argu) {
-      R _ret=null;
-      int _count=0;
-      for ( Enumeration<Node> e = n.elements(); e.hasMoreElements(); ) {
-         e.nextElement().accept(this,argu);
+   public String visit(NodeList n, A argu) {
+      String _ret = null;
+      int _count = 0;
+      for (Enumeration<Node> e = n.elements(); e.hasMoreElements();) {
+         e.nextElement().accept(this, argu);
          _count++;
       }
       return _ret;
    }
 
-   public R visit(NodeListOptional n, A argu) {
-      if ( n.present() ) {
-         R _ret=null;
-         int _count=0;
-         for ( Enumeration<Node> e = n.elements(); e.hasMoreElements(); ) {
-            e.nextElement().accept(this,argu);
+   public String visit(NodeListOptional n, A argu) {
+      if (n.present()) {
+         String _ret = null;
+         int _count = 0;
+         for (Enumeration<Node> e = n.elements(); e.hasMoreElements();) {
+            e.nextElement().accept(this, argu);
             _count++;
          }
          return _ret;
-      }
+      } else
+         return null;
+   }
+
+   public String visit(NodeOptional n, A argu) {
+      if (n.present())
+         return n.node.accept(this, argu);
       else
          return null;
    }
 
-   public R visit(NodeOptional n, A argu) {
-      if ( n.present() )
-         return n.node.accept(this,argu);
-      else
-         return null;
-   }
-
-   public R visit(NodeSequence n, A argu) {
-      R _ret=null;
-      int _count=0;
-      for ( Enumeration<Node> e = n.elements(); e.hasMoreElements(); ) {
-         e.nextElement().accept(this,argu);
+   public String visit(NodeSequence n, A argu) {
+      String _ret = null;
+      int _count = 0;
+      for (Enumeration<Node> e = n.elements(); e.hasMoreElements();) {
+         e.nextElement().accept(this, argu);
          _count++;
       }
       return _ret;
    }
 
-   public R visit(NodeToken n, A argu) { return null; }
+   public String visit(NodeToken n, A argu) {
+      return n.tokenImage;
+   }
 
-   //
-   // User-generated visitor methods below
-   //
+   public Map<String, ClassInfo> classInfoMap = new LinkedHashMap<>();
+   public String currClass;
+   public String currMethod;
+   public LoopInfo currLoop;
 
    /**
     * f0 -> MainClass()
     * f1 -> ( TypeDeclaration() )*
     * f2 -> <EOF>
     */
-   public R visit(Goal n, A argu) {
-      R _ret=null;
+   public String visit(Goal n, A argu) {
+      String _ret = null;
       n.f0.accept(this, argu);
       n.f1.accept(this, argu);
       n.f2.accept(this, argu);
@@ -87,15 +90,17 @@ public class ParallelizeVisitor<R,A> implements GJVisitor<R,A> {
     * f16 -> "}"
     * f17 -> "}"
     */
-   public R visit(MainClass n, A argu) {
-      R _ret=null;
+   public String visit(MainClass n, A argu) {
+      String _ret = null;
       n.f0.accept(this, argu);
-      n.f1.accept(this, argu);
+      currClass = n.f1.accept(this, argu);
+      classInfoMap.put(currClass, new ClassInfo());
       n.f2.accept(this, argu);
       n.f3.accept(this, argu);
       n.f4.accept(this, argu);
       n.f5.accept(this, argu);
-      n.f6.accept(this, argu);
+      currMethod = n.f6.accept(this, argu);
+      classInfoMap.get(currClass).methods.put(currMethod, new MethodInfo());
       n.f7.accept(this, argu);
       n.f8.accept(this, argu);
       n.f9.accept(this, argu);
@@ -107,15 +112,17 @@ public class ParallelizeVisitor<R,A> implements GJVisitor<R,A> {
       n.f15.accept(this, argu);
       n.f16.accept(this, argu);
       n.f17.accept(this, argu);
+      currMethod = null;
+      currClass = null;
       return _ret;
    }
 
    /**
     * f0 -> ClassDeclaration()
-    *       | ClassExtendsDeclaration()
+    * | ClassExtendsDeclaration()
     */
-   public R visit(TypeDeclaration n, A argu) {
-      R _ret=null;
+   public String visit(TypeDeclaration n, A argu) {
+      String _ret = null;
       n.f0.accept(this, argu);
       return _ret;
    }
@@ -127,13 +134,15 @@ public class ParallelizeVisitor<R,A> implements GJVisitor<R,A> {
     * f3 -> ( MethodDeclaration() )*
     * f4 -> "}"
     */
-   public R visit(ClassDeclaration n, A argu) {
-      R _ret=null;
+   public String visit(ClassDeclaration n, A argu) {
+      String _ret = null;
       n.f0.accept(this, argu);
-      n.f1.accept(this, argu);
+      currClass = n.f1.accept(this, argu);
+      classInfoMap.put(currClass, new ClassInfo());
       n.f2.accept(this, argu);
       n.f3.accept(this, argu);
       n.f4.accept(this, argu);
+      currClass = null;
       return _ret;
    }
 
@@ -146,15 +155,17 @@ public class ParallelizeVisitor<R,A> implements GJVisitor<R,A> {
     * f5 -> ( MethodDeclaration() )*
     * f6 -> "}"
     */
-   public R visit(ClassExtendsDeclaration n, A argu) {
-      R _ret=null;
+   public String visit(ClassExtendsDeclaration n, A argu) {
+      String _ret = null;
       n.f0.accept(this, argu);
-      n.f1.accept(this, argu);
+      currClass = n.f1.accept(this, argu);
+      classInfoMap.put(currClass, new ClassInfo());
       n.f2.accept(this, argu);
-      n.f3.accept(this, argu);
+      classInfoMap.get(currClass).parent = n.f3.accept(this, argu);
       n.f4.accept(this, argu);
       n.f5.accept(this, argu);
       n.f6.accept(this, argu);
+      currClass = null;
       return _ret;
    }
 
@@ -163,9 +174,14 @@ public class ParallelizeVisitor<R,A> implements GJVisitor<R,A> {
     * f1 -> Identifier()
     * f2 -> ";"
     */
-   public R visit(VarDeclaration n, A argu) {
-      R _ret=null;
+   public String visit(VarDeclaration n, A argu) {
+      String _ret = null;
+      MethodInfo currMethodInfo = classInfoMap.get(currClass).methods.get(currMethod);
       n.f0.accept(this, argu);
+      if (n.f0.f0.choice instanceof ArrayType)
+         currMethodInfo.addArrayVariable(n.f1.accept(this, argu));
+      else
+         currMethodInfo.addVariable(n.f1.accept(this, argu));
       n.f1.accept(this, argu);
       n.f2.accept(this, argu);
       return _ret;
@@ -186,11 +202,12 @@ public class ParallelizeVisitor<R,A> implements GJVisitor<R,A> {
     * f11 -> ";"
     * f12 -> "}"
     */
-   public R visit(MethodDeclaration n, A argu) {
-      R _ret=null;
+   public String visit(MethodDeclaration n, A argu) {
+      String _ret = null;
       n.f0.accept(this, argu);
       n.f1.accept(this, argu);
-      n.f2.accept(this, argu);
+      currMethod = n.f2.accept(this, argu);
+      classInfoMap.get(currClass).methods.put(currMethod, new MethodInfo());
       n.f3.accept(this, argu);
       n.f4.accept(this, argu);
       n.f5.accept(this, argu);
@@ -201,6 +218,7 @@ public class ParallelizeVisitor<R,A> implements GJVisitor<R,A> {
       n.f10.accept(this, argu);
       n.f11.accept(this, argu);
       n.f12.accept(this, argu);
+      currMethod = null;
       return _ret;
    }
 
@@ -208,8 +226,8 @@ public class ParallelizeVisitor<R,A> implements GJVisitor<R,A> {
     * f0 -> FormalParameter()
     * f1 -> ( FormalParameterRest() )*
     */
-   public R visit(FormalParameterList n, A argu) {
-      R _ret=null;
+   public String visit(FormalParameterList n, A argu) {
+      String _ret = null;
       n.f0.accept(this, argu);
       n.f1.accept(this, argu);
       return _ret;
@@ -219,10 +237,14 @@ public class ParallelizeVisitor<R,A> implements GJVisitor<R,A> {
     * f0 -> Type()
     * f1 -> Identifier()
     */
-   public R visit(FormalParameter n, A argu) {
-      R _ret=null;
+   public String visit(FormalParameter n, A argu) {
+      String _ret = null;
+      MethodInfo currMethodInfo = classInfoMap.get(currClass).methods.get(currMethod);
       n.f0.accept(this, argu);
-      n.f1.accept(this, argu);
+      if (n.f0.f0.choice instanceof ArrayType)
+         currMethodInfo.array_parameters.add(n.f1.accept(this, argu));
+      else
+         currMethodInfo.parameters.add(n.f1.accept(this, argu));
       return _ret;
    }
 
@@ -230,8 +252,8 @@ public class ParallelizeVisitor<R,A> implements GJVisitor<R,A> {
     * f0 -> ","
     * f1 -> FormalParameter()
     */
-   public R visit(FormalParameterRest n, A argu) {
-      R _ret=null;
+   public String visit(FormalParameterRest n, A argu) {
+      String _ret = null;
       n.f0.accept(this, argu);
       n.f1.accept(this, argu);
       return _ret;
@@ -239,13 +261,13 @@ public class ParallelizeVisitor<R,A> implements GJVisitor<R,A> {
 
    /**
     * f0 -> ArrayType()
-    *       | BooleanType()
-    *       | IntegerType()
-    *       | FloatType()
-    *       | Identifier()
+    * | BooleanType()
+    * | IntegerType()
+    * | FloatType()
+    * | Identifier()
     */
-   public R visit(Type n, A argu) {
-      R _ret=null;
+   public String visit(Type n, A argu) {
+      String _ret = null;
       n.f0.accept(this, argu);
       return _ret;
    }
@@ -255,8 +277,8 @@ public class ParallelizeVisitor<R,A> implements GJVisitor<R,A> {
     * f1 -> "["
     * f2 -> "]"
     */
-   public R visit(ArrayType n, A argu) {
-      R _ret=null;
+   public String visit(ArrayType n, A argu) {
+      String _ret = null;
       n.f0.accept(this, argu);
       n.f1.accept(this, argu);
       n.f2.accept(this, argu);
@@ -266,8 +288,8 @@ public class ParallelizeVisitor<R,A> implements GJVisitor<R,A> {
    /**
     * f0 -> "boolean"
     */
-   public R visit(BooleanType n, A argu) {
-      R _ret=null;
+   public String visit(BooleanType n, A argu) {
+      String _ret = null;
       n.f0.accept(this, argu);
       return _ret;
    }
@@ -275,8 +297,8 @@ public class ParallelizeVisitor<R,A> implements GJVisitor<R,A> {
    /**
     * f0 -> "int"
     */
-   public R visit(IntegerType n, A argu) {
-      R _ret=null;
+   public String visit(IntegerType n, A argu) {
+      String _ret = null;
       n.f0.accept(this, argu);
       return _ret;
    }
@@ -284,23 +306,23 @@ public class ParallelizeVisitor<R,A> implements GJVisitor<R,A> {
    /**
     * f0 -> "float"
     */
-   public R visit(FloatType n, A argu) {
-      R _ret=null;
+   public String visit(FloatType n, A argu) {
+      String _ret = null;
       n.f0.accept(this, argu);
       return _ret;
    }
 
    /**
     * f0 -> Block()
-    *       | AssignmentStatement()
-    *       | ArrayAssignmentStatement()
-    *       | IfStatement()
-    *       | ForStatement()
-    *       | WhileStatement()
-    *       | PrintStatement()
+    * | AssignmentStatement()
+    * | ArrayAssignmentStatement()
+    * | IfStatement()
+    * | ForStatement()
+    * | WhileStatement()
+    * | PrintStatement()
     */
-   public R visit(Statement n, A argu) {
-      R _ret=null;
+   public String visit(Statement n, A argu) {
+      String _ret = null;
       n.f0.accept(this, argu);
       return _ret;
    }
@@ -310,8 +332,8 @@ public class ParallelizeVisitor<R,A> implements GJVisitor<R,A> {
     * f1 -> ( Statement() )*
     * f2 -> "}"
     */
-   public R visit(Block n, A argu) {
-      R _ret=null;
+   public String visit(Block n, A argu) {
+      String _ret = null;
       n.f0.accept(this, argu);
       n.f1.accept(this, argu);
       n.f2.accept(this, argu);
@@ -324,31 +346,51 @@ public class ParallelizeVisitor<R,A> implements GJVisitor<R,A> {
     * f2 -> Expression()
     * f3 -> ";"
     */
-   public R visit(AssignmentStatement n, A argu) {
-      R _ret=null;
-      n.f0.accept(this, argu);
+   public String visit(AssignmentStatement n, A argu) {
+      String _ret = null;
+      MethodInfo currMethodInfo = classInfoMap.get(currClass).methods.get(currMethod);
+      String id = n.f0.accept(this, argu);
       n.f1.accept(this, argu);
       n.f2.accept(this, argu);
+      if (n.f2.f0.choice instanceof PrimaryExpression) {
+         PrimaryExpression pe = (PrimaryExpression) n.f2.f0.choice;
+         if (pe.f0.choice instanceof Identifier) {
+            // handling equality aliasing
+            String id2 = ((Identifier) pe.f0.choice).f0.tokenImage;
+            if (currMethodInfo.parameters.contains(id2))
+               currMethodInfo.aliasWithParams.add(id);
+            else if (currMethodInfo.aliasWithParams.contains(id2))
+               currMethodInfo.aliasWithParams.add(id);
+            else if (currMethodInfo.array_parameters.contains(id2))
+               currMethodInfo.aliasWithArrayParams.add(id);
+            else if (currMethodInfo.aliasWithArrayParams.contains(id2))
+               currMethodInfo.aliasWithArrayParams.add(id);
+            else if (currMethodInfo.variables.containsKey(id2))
+               currMethodInfo.varAlias(id, id2);
+            else if (currMethodInfo.array_variables.containsKey(id2))
+               currMethodInfo.arrayVarAlias(id, id2);
+         }
+      }
       n.f3.accept(this, argu);
       return _ret;
    }
 
    /**
     * f0 -> ArrayAssignArithemeticExpression()
-    *       | ArrayAssignArrayOrIntegerLiteralorIdentifier()
+    * | ArrayAssignArrayOrIntegerLiteralorIdentifier()
     */
-   public R visit(ArrayAssignmentStatement n, A argu) {
-      R _ret=null;
+   public String visit(ArrayAssignmentStatement n, A argu) {
+      String _ret = null;
       n.f0.accept(this, argu);
       return _ret;
    }
 
    /**
     * f0 -> IfthenElseStatement()
-    *       | IfthenStatement()
+    * | IfthenStatement()
     */
-   public R visit(IfStatement n, A argu) {
-      R _ret=null;
+   public String visit(IfStatement n, A argu) {
+      String _ret = null;
       n.f0.accept(this, argu);
       return _ret;
    }
@@ -360,8 +402,8 @@ public class ParallelizeVisitor<R,A> implements GJVisitor<R,A> {
     * f3 -> ")"
     * f4 -> Statement()
     */
-   public R visit(IfthenStatement n, A argu) {
-      R _ret=null;
+   public String visit(IfthenStatement n, A argu) {
+      String _ret = null;
       n.f0.accept(this, argu);
       n.f1.accept(this, argu);
       n.f2.accept(this, argu);
@@ -379,8 +421,8 @@ public class ParallelizeVisitor<R,A> implements GJVisitor<R,A> {
     * f5 -> "else"
     * f6 -> Statement()
     */
-   public R visit(IfthenElseStatement n, A argu) {
-      R _ret=null;
+   public String visit(IfthenElseStatement n, A argu) {
+      String _ret = null;
       n.f0.accept(this, argu);
       n.f1.accept(this, argu);
       n.f2.accept(this, argu);
@@ -398,8 +440,8 @@ public class ParallelizeVisitor<R,A> implements GJVisitor<R,A> {
     * f3 -> ")"
     * f4 -> Statement()
     */
-   public R visit(WhileStatement n, A argu) {
-      R _ret=null;
+   public String visit(WhileStatement n, A argu) {
+      String _ret = null;
       n.f0.accept(this, argu);
       n.f1.accept(this, argu);
       n.f2.accept(this, argu);
@@ -422,12 +464,15 @@ public class ParallelizeVisitor<R,A> implements GJVisitor<R,A> {
     * f10 -> ")"
     * f11 -> Statement()
     */
-   public R visit(ForStatement n, A argu) {
-      R _ret=null;
+   public String visit(ForStatement n, A argu) {
+      String _ret = null;
+      MethodInfo currMethodInfo = classInfoMap.get(currClass).methods.get(currMethod);
+      currLoop = new LoopInfo();
+      currMethodInfo.loops.add(currLoop);
       n.f0.accept(this, argu);
       n.f1.accept(this, argu);
       n.f2.accept(this, argu);
-      n.f3.accept(this, argu);
+      currLoop.loop_var = n.f3.accept(this, argu);
       n.f4.accept(this, argu);
       n.f5.accept(this, argu);
       n.f6.accept(this, argu);
@@ -436,6 +481,7 @@ public class ParallelizeVisitor<R,A> implements GJVisitor<R,A> {
       n.f9.accept(this, argu);
       n.f10.accept(this, argu);
       n.f11.accept(this, argu);
+      currLoop.CheckParallelizability();
       return _ret;
    }
 
@@ -444,8 +490,8 @@ public class ParallelizeVisitor<R,A> implements GJVisitor<R,A> {
     * f1 -> <PARALLEL_ANNOTATION>
     * f2 -> <SCOMMENT2>
     */
-   public R visit(ParallelAnnotation n, A argu) {
-      R _ret=null;
+   public String visit(ParallelAnnotation n, A argu) {
+      String _ret = null;
       n.f0.accept(this, argu);
       n.f1.accept(this, argu);
       n.f2.accept(this, argu);
@@ -459,8 +505,8 @@ public class ParallelizeVisitor<R,A> implements GJVisitor<R,A> {
     * f3 -> ")"
     * f4 -> ";"
     */
-   public R visit(PrintStatement n, A argu) {
-      R _ret=null;
+   public String visit(PrintStatement n, A argu) {
+      String _ret = null;
       n.f0.accept(this, argu);
       n.f1.accept(this, argu);
       n.f2.accept(this, argu);
@@ -471,38 +517,38 @@ public class ParallelizeVisitor<R,A> implements GJVisitor<R,A> {
 
    /**
     * f0 -> OrExpression()
-    *       | AndExpression()
-    *       | LTEExpression()
-    *       | GTEExpression()
-    *       | LTExpression()
-    *       | GTExpression()
-    *       | NeqExpression()
-    *       | EQExpression()
-    *       | PlusExpression()
-    *       | MinusExpression()
-    *       | TimesExpression()
-    *       | DivExpression()
-    *       | ArrayLookup()
-    *       | ArrayLength()
-    *       | MessageSend()
-    *       | PrimaryExpression()
+    * | AndExpression()
+    * | LTEExpression()
+    * | GTEExpression()
+    * | LTExpression()
+    * | GTExpression()
+    * | NeqExpression()
+    * | EQExpression()
+    * | PlusExpression()
+    * | MinusExpression()
+    * | TimesExpression()
+    * | DivExpression()
+    * | ArrayLookup()
+    * | ArrayLength()
+    * | MessageSend()
+    * | PrimaryExpression()
     */
-   public R visit(Expression n, A argu) {
-      R _ret=null;
+   public String visit(Expression n, A argu) {
+      String _ret = null;
       n.f0.accept(this, argu);
       return _ret;
    }
 
    /**
     * f0 -> LTEExpression()
-    *       | LTExpression()
-    *       | GTEExpression()
-    *       | GTExpression()
-    *       | NeqExpression()
-    *       | EQExpression()
+    * | LTExpression()
+    * | GTEExpression()
+    * | GTExpression()
+    * | NeqExpression()
+    * | EQExpression()
     */
-   public R visit(RelopExpression n, A argu) {
-      R _ret=null;
+   public String visit(RelopExpression n, A argu) {
+      String _ret = null;
       n.f0.accept(this, argu);
       return _ret;
    }
@@ -512,8 +558,8 @@ public class ParallelizeVisitor<R,A> implements GJVisitor<R,A> {
     * f1 -> "="
     * f2 -> ArithemeticExpression()
     */
-   public R visit(UpdateLoopInductionVariable n, A argu) {
-      R _ret=null;
+   public String visit(UpdateLoopInductionVariable n, A argu) {
+      String _ret = null;
       n.f0.accept(this, argu);
       n.f1.accept(this, argu);
       n.f2.accept(this, argu);
@@ -522,23 +568,23 @@ public class ParallelizeVisitor<R,A> implements GJVisitor<R,A> {
 
    /**
     * f0 -> PlusExpression()
-    *       | MinusExpression()
-    *       | TimesExpression()
-    *       | DivExpression()
+    * | MinusExpression()
+    * | TimesExpression()
+    * | DivExpression()
     */
-   public R visit(ArithemeticExpression n, A argu) {
-      R _ret=null;
+   public String visit(ArithemeticExpression n, A argu) {
+      String _ret = null;
       n.f0.accept(this, argu);
       return _ret;
    }
 
    /**
     * f0 -> ArrayLookup()
-    *       | Identifier()
-    *       | IntegerLiteral()
+    * | Identifier()
+    * | IntegerLiteral()
     */
-   public R visit(ArrayorIdentifierorIntegerLiteral n, A argu) {
-      R _ret=null;
+   public String visit(ArrayorIdentifierorIntegerLiteral n, A argu) {
+      String _ret = null;
       n.f0.accept(this, argu);
       return _ret;
    }
@@ -548,8 +594,8 @@ public class ParallelizeVisitor<R,A> implements GJVisitor<R,A> {
     * f1 -> "&&"
     * f2 -> Identifier()
     */
-   public R visit(AndExpression n, A argu) {
-      R _ret=null;
+   public String visit(AndExpression n, A argu) {
+      String _ret = null;
       n.f0.accept(this, argu);
       n.f1.accept(this, argu);
       n.f2.accept(this, argu);
@@ -561,8 +607,8 @@ public class ParallelizeVisitor<R,A> implements GJVisitor<R,A> {
     * f1 -> "||"
     * f2 -> Identifier()
     */
-   public R visit(OrExpression n, A argu) {
-      R _ret=null;
+   public String visit(OrExpression n, A argu) {
+      String _ret = null;
       n.f0.accept(this, argu);
       n.f1.accept(this, argu);
       n.f2.accept(this, argu);
@@ -574,8 +620,8 @@ public class ParallelizeVisitor<R,A> implements GJVisitor<R,A> {
     * f1 -> "<="
     * f2 -> IntegerOrIdentifier()
     */
-   public R visit(LTEExpression n, A argu) {
-      R _ret=null;
+   public String visit(LTEExpression n, A argu) {
+      String _ret = null;
       n.f0.accept(this, argu);
       n.f1.accept(this, argu);
       n.f2.accept(this, argu);
@@ -587,8 +633,8 @@ public class ParallelizeVisitor<R,A> implements GJVisitor<R,A> {
     * f1 -> "<"
     * f2 -> IntegerOrIdentifier()
     */
-   public R visit(LTExpression n, A argu) {
-      R _ret=null;
+   public String visit(LTExpression n, A argu) {
+      String _ret = null;
       n.f0.accept(this, argu);
       n.f1.accept(this, argu);
       n.f2.accept(this, argu);
@@ -600,8 +646,8 @@ public class ParallelizeVisitor<R,A> implements GJVisitor<R,A> {
     * f1 -> ">="
     * f2 -> IntegerOrIdentifier()
     */
-   public R visit(GTEExpression n, A argu) {
-      R _ret=null;
+   public String visit(GTEExpression n, A argu) {
+      String _ret = null;
       n.f0.accept(this, argu);
       n.f1.accept(this, argu);
       n.f2.accept(this, argu);
@@ -613,8 +659,8 @@ public class ParallelizeVisitor<R,A> implements GJVisitor<R,A> {
     * f1 -> ">"
     * f2 -> IntegerOrIdentifier()
     */
-   public R visit(GTExpression n, A argu) {
-      R _ret=null;
+   public String visit(GTExpression n, A argu) {
+      String _ret = null;
       n.f0.accept(this, argu);
       n.f1.accept(this, argu);
       n.f2.accept(this, argu);
@@ -626,8 +672,8 @@ public class ParallelizeVisitor<R,A> implements GJVisitor<R,A> {
     * f1 -> "=="
     * f2 -> IntegerOrIdentifier()
     */
-   public R visit(EQExpression n, A argu) {
-      R _ret=null;
+   public String visit(EQExpression n, A argu) {
+      String _ret = null;
       n.f0.accept(this, argu);
       n.f1.accept(this, argu);
       n.f2.accept(this, argu);
@@ -639,8 +685,8 @@ public class ParallelizeVisitor<R,A> implements GJVisitor<R,A> {
     * f1 -> "!="
     * f2 -> IntegerOrIdentifier()
     */
-   public R visit(NeqExpression n, A argu) {
-      R _ret=null;
+   public String visit(NeqExpression n, A argu) {
+      String _ret = null;
       n.f0.accept(this, argu);
       n.f1.accept(this, argu);
       n.f2.accept(this, argu);
@@ -652,8 +698,8 @@ public class ParallelizeVisitor<R,A> implements GJVisitor<R,A> {
     * f1 -> "+"
     * f2 -> ArrayorIdentifierorIntegerLiteral()
     */
-   public R visit(PlusExpression n, A argu) {
-      R _ret=null;
+   public String visit(PlusExpression n, A argu) {
+      String _ret = null;
       n.f0.accept(this, argu);
       n.f1.accept(this, argu);
       n.f2.accept(this, argu);
@@ -665,8 +711,8 @@ public class ParallelizeVisitor<R,A> implements GJVisitor<R,A> {
     * f1 -> "-"
     * f2 -> ArrayorIdentifierorIntegerLiteral()
     */
-   public R visit(MinusExpression n, A argu) {
-      R _ret=null;
+   public String visit(MinusExpression n, A argu) {
+      String _ret = null;
       n.f0.accept(this, argu);
       n.f1.accept(this, argu);
       n.f2.accept(this, argu);
@@ -678,8 +724,8 @@ public class ParallelizeVisitor<R,A> implements GJVisitor<R,A> {
     * f1 -> "*"
     * f2 -> ArrayorIdentifierorIntegerLiteral()
     */
-   public R visit(TimesExpression n, A argu) {
-      R _ret=null;
+   public String visit(TimesExpression n, A argu) {
+      String _ret = null;
       n.f0.accept(this, argu);
       n.f1.accept(this, argu);
       n.f2.accept(this, argu);
@@ -691,8 +737,8 @@ public class ParallelizeVisitor<R,A> implements GJVisitor<R,A> {
     * f1 -> "/"
     * f2 -> ArrayorIdentifierorIntegerLiteral()
     */
-   public R visit(DivExpression n, A argu) {
-      R _ret=null;
+   public String visit(DivExpression n, A argu) {
+      String _ret = null;
       n.f0.accept(this, argu);
       n.f1.accept(this, argu);
       n.f2.accept(this, argu);
@@ -705,8 +751,8 @@ public class ParallelizeVisitor<R,A> implements GJVisitor<R,A> {
     * f2 -> IntegerOrIdentifier()
     * f3 -> "]"
     */
-   public R visit(ArrayLookup n, A argu) {
-      R _ret=null;
+   public String visit(ArrayLookup n, A argu) {
+      String _ret = null;
       n.f0.accept(this, argu);
       n.f1.accept(this, argu);
       n.f2.accept(this, argu);
@@ -719,8 +765,8 @@ public class ParallelizeVisitor<R,A> implements GJVisitor<R,A> {
     * f1 -> "."
     * f2 -> "length"
     */
-   public R visit(ArrayLength n, A argu) {
-      R _ret=null;
+   public String visit(ArrayLength n, A argu) {
+      String _ret = null;
       n.f0.accept(this, argu);
       n.f1.accept(this, argu);
       n.f2.accept(this, argu);
@@ -735,8 +781,8 @@ public class ParallelizeVisitor<R,A> implements GJVisitor<R,A> {
     * f4 -> ( ArgList() )?
     * f5 -> ")"
     */
-   public R visit(MessageSend n, A argu) {
-      R _ret=null;
+   public String visit(MessageSend n, A argu) {
+      String _ret = null;
       n.f0.accept(this, argu);
       n.f1.accept(this, argu);
       n.f2.accept(this, argu);
@@ -750,8 +796,8 @@ public class ParallelizeVisitor<R,A> implements GJVisitor<R,A> {
     * f0 -> Identifier()
     * f1 -> ( ArgRest() )*
     */
-   public R visit(ArgList n, A argu) {
-      R _ret=null;
+   public String visit(ArgList n, A argu) {
+      String _ret = null;
       n.f0.accept(this, argu);
       n.f1.accept(this, argu);
       return _ret;
@@ -761,8 +807,8 @@ public class ParallelizeVisitor<R,A> implements GJVisitor<R,A> {
     * f0 -> ","
     * f1 -> Identifier()
     */
-   public R visit(ArgRest n, A argu) {
-      R _ret=null;
+   public String visit(ArgRest n, A argu) {
+      String _ret = null;
       n.f0.accept(this, argu);
       n.f1.accept(this, argu);
       return _ret;
@@ -770,16 +816,16 @@ public class ParallelizeVisitor<R,A> implements GJVisitor<R,A> {
 
    /**
     * f0 -> IntegerLiteral()
-    *       | TrueLiteral()
-    *       | FalseLiteral()
-    *       | Identifier()
-    *       | ThisExpression()
-    *       | ArrayAllocationExpression()
-    *       | AllocationExpression()
-    *       | NotExpression()
+    * | TrueLiteral()
+    * | FalseLiteral()
+    * | Identifier()
+    * | ThisExpression()
+    * | ArrayAllocationExpression()
+    * | AllocationExpression()
+    * | NotExpression()
     */
-   public R visit(PrimaryExpression n, A argu) {
-      R _ret=null;
+   public String visit(PrimaryExpression n, A argu) {
+      String _ret = null;
       n.f0.accept(this, argu);
       return _ret;
    }
@@ -787,45 +833,45 @@ public class ParallelizeVisitor<R,A> implements GJVisitor<R,A> {
    /**
     * f0 -> <INTEGER_LITERAL>
     */
-   public R visit(IntegerLiteral n, A argu) {
-      R _ret=null;
-      n.f0.accept(this, argu);
+   public String visit(IntegerLiteral n, A argu) {
+      String _ret = null;
+      _ret = n.f0.accept(this, argu);
       return _ret;
    }
 
    /**
     * f0 -> "true"
     */
-   public R visit(TrueLiteral n, A argu) {
-      R _ret=null;
-      n.f0.accept(this, argu);
+   public String visit(TrueLiteral n, A argu) {
+      String _ret = null;
+      _ret = n.f0.accept(this, argu);
       return _ret;
    }
 
    /**
     * f0 -> "false"
     */
-   public R visit(FalseLiteral n, A argu) {
-      R _ret=null;
-      n.f0.accept(this, argu);
+   public String visit(FalseLiteral n, A argu) {
+      String _ret = null;
+      _ret = n.f0.accept(this, argu);
       return _ret;
    }
 
    /**
     * f0 -> <IDENTIFIER>
     */
-   public R visit(Identifier n, A argu) {
-      R _ret=null;
-      n.f0.accept(this, argu);
+   public String visit(Identifier n, A argu) {
+      String _ret = null;
+      _ret = n.f0.accept(this, argu);
       return _ret;
    }
 
    /**
     * f0 -> "this"
     */
-   public R visit(ThisExpression n, A argu) {
-      R _ret=null;
-      n.f0.accept(this, argu);
+   public String visit(ThisExpression n, A argu) {
+      String _ret = null;
+      _ret = n.f0.accept(this, argu);
       return _ret;
    }
 
@@ -836,8 +882,8 @@ public class ParallelizeVisitor<R,A> implements GJVisitor<R,A> {
     * f3 -> IntegerOrIdentifier()
     * f4 -> "]"
     */
-   public R visit(ArrayAllocationExpression n, A argu) {
-      R _ret=null;
+   public String visit(ArrayAllocationExpression n, A argu) {
+      String _ret = null;
       n.f0.accept(this, argu);
       n.f1.accept(this, argu);
       n.f2.accept(this, argu);
@@ -852,8 +898,8 @@ public class ParallelizeVisitor<R,A> implements GJVisitor<R,A> {
     * f2 -> "("
     * f3 -> ")"
     */
-   public R visit(AllocationExpression n, A argu) {
-      R _ret=null;
+   public String visit(AllocationExpression n, A argu) {
+      String _ret = null;
       n.f0.accept(this, argu);
       n.f1.accept(this, argu);
       n.f2.accept(this, argu);
@@ -865,8 +911,8 @@ public class ParallelizeVisitor<R,A> implements GJVisitor<R,A> {
     * f0 -> "!"
     * f1 -> Identifier()
     */
-   public R visit(NotExpression n, A argu) {
-      R _ret=null;
+   public String visit(NotExpression n, A argu) {
+      String _ret = null;
       n.f0.accept(this, argu);
       n.f1.accept(this, argu);
       return _ret;
@@ -874,11 +920,11 @@ public class ParallelizeVisitor<R,A> implements GJVisitor<R,A> {
 
    /**
     * f0 -> IntegerLiteral()
-    *       | Identifier()
+    * | Identifier()
     */
-   public R visit(IntegerOrIdentifier n, A argu) {
-      R _ret=null;
-      n.f0.accept(this, argu);
+   public String visit(IntegerOrIdentifier n, A argu) {
+      String _ret = null;
+      _ret = n.f0.accept(this, argu);
       return _ret;
    }
 
@@ -888,8 +934,8 @@ public class ParallelizeVisitor<R,A> implements GJVisitor<R,A> {
     * f2 -> ArithemeticExpression()
     * f3 -> ";"
     */
-   public R visit(ArrayAssignArithemeticExpression n, A argu) {
-      R _ret=null;
+   public String visit(ArrayAssignArithemeticExpression n, A argu) {
+      String _ret = null;
       n.f0.accept(this, argu);
       n.f1.accept(this, argu);
       n.f2.accept(this, argu);
@@ -903,8 +949,8 @@ public class ParallelizeVisitor<R,A> implements GJVisitor<R,A> {
     * f2 -> ArrayorIdentifierorIntegerLiteral()
     * f3 -> ";"
     */
-   public R visit(ArrayAssignArrayOrIntegerLiteralorIdentifier n, A argu) {
-      R _ret=null;
+   public String visit(ArrayAssignArrayOrIntegerLiteralorIdentifier n, A argu) {
+      String _ret = null;
       n.f0.accept(this, argu);
       n.f1.accept(this, argu);
       n.f2.accept(this, argu);

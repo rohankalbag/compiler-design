@@ -4,12 +4,12 @@ package visitor;
 import syntaxtree.*;
 import java.util.*;
 
-public class PrintVisitor<R, A> implements GJVisitor<R, A> {
+public class PrintVisitor<R, A> implements GJVisitor<String, A> {
     //
     // Auto class visitors--probably don't need to be overridden.
     //
-    public R visit(NodeList n, A argu) {
-        R _ret = null;
+    public String visit(NodeList n, A argu) {
+        String _ret = null;
         int _count = 0;
         for (Enumeration<Node> e = n.elements(); e.hasMoreElements();) {
             e.nextElement().accept(this, argu);
@@ -18,9 +18,9 @@ public class PrintVisitor<R, A> implements GJVisitor<R, A> {
         return _ret;
     }
 
-    public R visit(NodeListOptional n, A argu) {
+    public String visit(NodeListOptional n, A argu) {
         if (n.present()) {
-            R _ret = null;
+            String _ret = null;
             int _count = 0;
             for (Enumeration<Node> e = n.elements(); e.hasMoreElements();) {
                 e.nextElement().accept(this, argu);
@@ -31,15 +31,15 @@ public class PrintVisitor<R, A> implements GJVisitor<R, A> {
             return null;
     }
 
-    public R visit(NodeOptional n, A argu) {
+    public String visit(NodeOptional n, A argu) {
         if (n.present())
             return n.node.accept(this, argu);
         else
             return null;
     }
 
-    public R visit(NodeSequence n, A argu) {
-        R _ret = null;
+    public String visit(NodeSequence n, A argu) {
+        String _ret = null;
         int _count = 0;
         for (Enumeration<Node> e = n.elements(); e.hasMoreElements();) {
             e.nextElement().accept(this, argu);
@@ -48,8 +48,9 @@ public class PrintVisitor<R, A> implements GJVisitor<R, A> {
         return _ret;
     }
 
-    public R visit(NodeToken n, A argu) {
-        R _ret = null;
+    public String visit(NodeToken n, A argu) {
+        String _ret = null;
+        _ret = n.tokenImage;
 
         if (n.tokenImage == "{") {
             indent++;
@@ -85,10 +86,12 @@ public class PrintVisitor<R, A> implements GJVisitor<R, A> {
     public static boolean DEBUG = false;
     public List<String> prettyPrint;
     public List<String> prettyPrintMessageSend;
+    public Map<String, ClassInfo> classInfoMap;
     public int indent;
     public String currentClass;
     public String currentMethod;
     public boolean InFor = false;
+    public int currFor = 0;
 
     public PrintVisitor() {
         prettyPrint = new ArrayList<>();
@@ -114,8 +117,8 @@ public class PrintVisitor<R, A> implements GJVisitor<R, A> {
      * f1 -> ( TypeDeclaration() )*
      * f2 -> <EOF>
      */
-    public R visit(Goal n, A argu) {
-        R _ret = null;
+    public String visit(Goal n, A argu) {
+        String _ret = null;
         n.f0.accept(this, argu);
         n.f1.accept(this, argu);
         n.f2.accept(this, argu);
@@ -142,15 +145,15 @@ public class PrintVisitor<R, A> implements GJVisitor<R, A> {
      * f16 -> "}"
      * f17 -> "}"
      */
-    public R visit(MainClass n, A argu) {
-        R _ret = null;
+    public String visit(MainClass n, A argu) {
+        String _ret = null;
         n.f0.accept(this, argu);
-        n.f1.accept(this, argu);
+        currentClass = n.f1.accept(this, argu);
         n.f2.accept(this, argu);
         n.f3.accept(this, argu);
         n.f4.accept(this, argu);
         n.f5.accept(this, argu);
-        n.f6.accept(this, argu);
+        currentMethod = n.f6.accept(this, argu);
         n.f7.accept(this, argu);
         n.f8.accept(this, argu);
         n.f9.accept(this, argu);
@@ -162,6 +165,8 @@ public class PrintVisitor<R, A> implements GJVisitor<R, A> {
         n.f15.accept(this, argu);
         n.f16.accept(this, argu);
         n.f17.accept(this, argu);
+        currentMethod = null;
+        currentClass = null;
         return _ret;
     }
 
@@ -169,8 +174,8 @@ public class PrintVisitor<R, A> implements GJVisitor<R, A> {
      * f0 -> ClassDeclaration()
      * | ClassExtendsDeclaration()
      */
-    public R visit(TypeDeclaration n, A argu) {
-        R _ret = null;
+    public String visit(TypeDeclaration n, A argu) {
+        String _ret = null;
         n.f0.accept(this, argu);
         return _ret;
     }
@@ -182,13 +187,14 @@ public class PrintVisitor<R, A> implements GJVisitor<R, A> {
      * f3 -> ( MethodDeclaration() )*
      * f4 -> "}"
      */
-    public R visit(ClassDeclaration n, A argu) {
-        R _ret = null;
+    public String visit(ClassDeclaration n, A argu) {
+        String _ret = null;
         n.f0.accept(this, argu);
-        n.f1.accept(this, argu);
+        currentClass = n.f1.accept(this, argu);
         n.f2.accept(this, argu);
         n.f3.accept(this, argu);
         n.f4.accept(this, argu);
+        currentClass = null;
         return _ret;
     }
 
@@ -201,15 +207,16 @@ public class PrintVisitor<R, A> implements GJVisitor<R, A> {
      * f5 -> ( MethodDeclaration() )*
      * f6 -> "}"
      */
-    public R visit(ClassExtendsDeclaration n, A argu) {
-        R _ret = null;
+    public String visit(ClassExtendsDeclaration n, A argu) {
+        String _ret = null;
         n.f0.accept(this, argu);
-        n.f1.accept(this, argu);
+        currentClass = n.f1.accept(this, argu);
         n.f2.accept(this, argu);
         n.f3.accept(this, argu);
         n.f4.accept(this, argu);
         n.f5.accept(this, argu);
         n.f6.accept(this, argu);
+        currentClass = null;
         return _ret;
     }
 
@@ -218,8 +225,8 @@ public class PrintVisitor<R, A> implements GJVisitor<R, A> {
      * f1 -> Identifier()
      * f2 -> ";"
      */
-    public R visit(VarDeclaration n, A argu) {
-        R _ret = null;
+    public String visit(VarDeclaration n, A argu) {
+        String _ret = null;
         n.f0.accept(this, argu);
         n.f1.accept(this, argu);
         n.f2.accept(this, argu);
@@ -241,11 +248,12 @@ public class PrintVisitor<R, A> implements GJVisitor<R, A> {
      * f11 -> ";"
      * f12 -> "}"
      */
-    public R visit(MethodDeclaration n, A argu) {
-        R _ret = null;
+    public String visit(MethodDeclaration n, A argu) {
+        String _ret = null;
         n.f0.accept(this, argu);
         n.f1.accept(this, argu);
-        n.f2.accept(this, argu);
+        currentMethod = n.f2.accept(this, argu);
+        currFor = 0;
         n.f3.accept(this, argu);
         n.f4.accept(this, argu);
         n.f5.accept(this, argu);
@@ -263,8 +271,8 @@ public class PrintVisitor<R, A> implements GJVisitor<R, A> {
      * f0 -> FormalParameter()
      * f1 -> ( FormalParameterRest() )*
      */
-    public R visit(FormalParameterList n, A argu) {
-        R _ret = null;
+    public String visit(FormalParameterList n, A argu) {
+        String _ret = null;
         n.f0.accept(this, argu);
         n.f1.accept(this, argu);
         return _ret;
@@ -274,8 +282,8 @@ public class PrintVisitor<R, A> implements GJVisitor<R, A> {
      * f0 -> Type()
      * f1 -> Identifier()
      */
-    public R visit(FormalParameter n, A argu) {
-        R _ret = null;
+    public String visit(FormalParameter n, A argu) {
+        String _ret = null;
         n.f0.accept(this, argu);
         n.f1.accept(this, argu);
         return _ret;
@@ -285,8 +293,8 @@ public class PrintVisitor<R, A> implements GJVisitor<R, A> {
      * f0 -> ","
      * f1 -> FormalParameter()
      */
-    public R visit(FormalParameterRest n, A argu) {
-        R _ret = null;
+    public String visit(FormalParameterRest n, A argu) {
+        String _ret = null;
         n.f0.accept(this, argu);
         n.f1.accept(this, argu);
         return _ret;
@@ -299,8 +307,8 @@ public class PrintVisitor<R, A> implements GJVisitor<R, A> {
      * | FloatType()
      * | Identifier()
      */
-    public R visit(Type n, A argu) {
-        R _ret = null;
+    public String visit(Type n, A argu) {
+        String _ret = null;
         n.f0.accept(this, argu);
         return _ret;
     }
@@ -310,8 +318,8 @@ public class PrintVisitor<R, A> implements GJVisitor<R, A> {
      * f1 -> "["
      * f2 -> "]"
      */
-    public R visit(ArrayType n, A argu) {
-        R _ret = null;
+    public String visit(ArrayType n, A argu) {
+        String _ret = null;
         n.f0.accept(this, argu);
         n.f1.accept(this, argu);
         n.f2.accept(this, argu);
@@ -321,8 +329,8 @@ public class PrintVisitor<R, A> implements GJVisitor<R, A> {
     /**
      * f0 -> "boolean"
      */
-    public R visit(BooleanType n, A argu) {
-        R _ret = null;
+    public String visit(BooleanType n, A argu) {
+        String _ret = null;
         n.f0.accept(this, argu);
         return _ret;
     }
@@ -330,8 +338,8 @@ public class PrintVisitor<R, A> implements GJVisitor<R, A> {
     /**
      * f0 -> "int"
      */
-    public R visit(IntegerType n, A argu) {
-        R _ret = null;
+    public String visit(IntegerType n, A argu) {
+        String _ret = null;
         n.f0.accept(this, argu);
         return _ret;
     }
@@ -339,8 +347,8 @@ public class PrintVisitor<R, A> implements GJVisitor<R, A> {
     /**
      * f0 -> "float"
      */
-    public R visit(FloatType n, A argu) {
-        R _ret = null;
+    public String visit(FloatType n, A argu) {
+        String _ret = null;
         n.f0.accept(this, argu);
         return _ret;
     }
@@ -354,8 +362,8 @@ public class PrintVisitor<R, A> implements GJVisitor<R, A> {
      * | WhileStatement()
      * | PrintStatement()
      */
-    public R visit(Statement n, A argu) {
-        R _ret = null;
+    public String visit(Statement n, A argu) {
+        String _ret = null;
         n.f0.accept(this, argu);
         return _ret;
     }
@@ -365,8 +373,8 @@ public class PrintVisitor<R, A> implements GJVisitor<R, A> {
      * f1 -> ( Statement() )*
      * f2 -> "}"
      */
-    public R visit(Block n, A argu) {
-        R _ret = null;
+    public String visit(Block n, A argu) {
+        String _ret = null;
         n.f0.accept(this, argu);
         n.f1.accept(this, argu);
         n.f2.accept(this, argu);
@@ -379,8 +387,8 @@ public class PrintVisitor<R, A> implements GJVisitor<R, A> {
      * f2 -> Expression()
      * f3 -> ";"
      */
-    public R visit(AssignmentStatement n, A argu) {
-        R _ret = null;
+    public String visit(AssignmentStatement n, A argu) {
+        String _ret = null;
         n.f0.accept(this, argu);
         n.f1.accept(this, argu);
         n.f2.accept(this, argu);
@@ -392,8 +400,8 @@ public class PrintVisitor<R, A> implements GJVisitor<R, A> {
      * f0 -> ArrayAssignArithemeticExpression()
      * | ArrayAssignArrayOrIntegerLiteralorIdentifier()
      */
-    public R visit(ArrayAssignmentStatement n, A argu) {
-        R _ret = null;
+    public String visit(ArrayAssignmentStatement n, A argu) {
+        String _ret = null;
         n.f0.accept(this, argu);
         return _ret;
     }
@@ -402,8 +410,8 @@ public class PrintVisitor<R, A> implements GJVisitor<R, A> {
      * f0 -> IfthenElseStatement()
      * | IfthenStatement()
      */
-    public R visit(IfStatement n, A argu) {
-        R _ret = null;
+    public String visit(IfStatement n, A argu) {
+        String _ret = null;
         n.f0.accept(this, argu);
         return _ret;
     }
@@ -415,8 +423,8 @@ public class PrintVisitor<R, A> implements GJVisitor<R, A> {
      * f3 -> ")"
      * f4 -> Statement()
      */
-    public R visit(IfthenStatement n, A argu) {
-        R _ret = null;
+    public String visit(IfthenStatement n, A argu) {
+        String _ret = null;
         n.f0.accept(this, argu);
         n.f1.accept(this, argu);
         n.f2.accept(this, argu);
@@ -434,8 +442,8 @@ public class PrintVisitor<R, A> implements GJVisitor<R, A> {
      * f5 -> "else"
      * f6 -> Statement()
      */
-    public R visit(IfthenElseStatement n, A argu) {
-        R _ret = null;
+    public String visit(IfthenElseStatement n, A argu) {
+        String _ret = null;
         n.f0.accept(this, argu);
         n.f1.accept(this, argu);
         n.f2.accept(this, argu);
@@ -453,8 +461,8 @@ public class PrintVisitor<R, A> implements GJVisitor<R, A> {
      * f3 -> ")"
      * f4 -> Statement()
      */
-    public R visit(WhileStatement n, A argu) {
-        R _ret = null;
+    public String visit(WhileStatement n, A argu) {
+        String _ret = null;
         n.f0.accept(this, argu);
         n.f1.accept(this, argu);
         n.f2.accept(this, argu);
@@ -477,12 +485,18 @@ public class PrintVisitor<R, A> implements GJVisitor<R, A> {
      * f10 -> ")"
      * f11 -> Statement()
      */
-    public R visit(ForStatement n, A argu) {
-        R _ret = null;
+    public String visit(ForStatement n, A argu) {
+        String _ret = null;
         InFor = true;
+        LoopInfo currLoopInfo = classInfoMap.get(currentClass).methods.get(currentMethod).loops.get(currFor);
         n.f0.accept(this, argu);
         n.f1.accept(this, argu);
-        n.f2.accept(this, argu);
+        if (currLoopInfo.isParallelizable) {
+            n.f2 = new NodeOptional(new ParallelAnnotation());
+            n.f2.accept(this, argu);
+        } else {
+            n.f2.accept(this, argu);
+        }
         n.f3.accept(this, argu);
         n.f4.accept(this, argu);
         n.f5.accept(this, argu);
@@ -492,6 +506,7 @@ public class PrintVisitor<R, A> implements GJVisitor<R, A> {
         n.f9.accept(this, argu);
         n.f10.accept(this, argu);
         InFor = false;
+        currFor++;
         n.f11.accept(this, argu);
         return _ret;
     }
@@ -501,8 +516,8 @@ public class PrintVisitor<R, A> implements GJVisitor<R, A> {
      * f1 -> <PARALLEL_ANNOTATION>
      * f2 -> <SCOMMENT2>
      */
-    public R visit(ParallelAnnotation n, A argu) {
-        R _ret = null;
+    public String visit(ParallelAnnotation n, A argu) {
+        String _ret = null;
         n.f0.accept(this, argu);
         n.f1.accept(this, argu);
         n.f2.accept(this, argu);
@@ -516,8 +531,8 @@ public class PrintVisitor<R, A> implements GJVisitor<R, A> {
      * f3 -> ")"
      * f4 -> ";"
      */
-    public R visit(PrintStatement n, A argu) {
-        R _ret = null;
+    public String visit(PrintStatement n, A argu) {
+        String _ret = null;
         n.f0.accept(this, argu);
         n.f1.accept(this, argu);
         n.f2.accept(this, argu);
@@ -544,8 +559,8 @@ public class PrintVisitor<R, A> implements GJVisitor<R, A> {
      * | MessageSend()
      * | PrimaryExpression()
      */
-    public R visit(Expression n, A argu) {
-        R _ret = null;
+    public String visit(Expression n, A argu) {
+        String _ret = null;
         n.f0.accept(this, argu);
         return _ret;
     }
@@ -558,8 +573,8 @@ public class PrintVisitor<R, A> implements GJVisitor<R, A> {
      * | NeqExpression()
      * | EQExpression()
      */
-    public R visit(RelopExpression n, A argu) {
-        R _ret = null;
+    public String visit(RelopExpression n, A argu) {
+        String _ret = null;
         n.f0.accept(this, argu);
         return _ret;
     }
@@ -569,8 +584,8 @@ public class PrintVisitor<R, A> implements GJVisitor<R, A> {
      * f1 -> "="
      * f2 -> ArithemeticExpression()
      */
-    public R visit(UpdateLoopInductionVariable n, A argu) {
-        R _ret = null;
+    public String visit(UpdateLoopInductionVariable n, A argu) {
+        String _ret = null;
         n.f0.accept(this, argu);
         n.f1.accept(this, argu);
         n.f2.accept(this, argu);
@@ -583,8 +598,8 @@ public class PrintVisitor<R, A> implements GJVisitor<R, A> {
      * | TimesExpression()
      * | DivExpression()
      */
-    public R visit(ArithemeticExpression n, A argu) {
-        R _ret = null;
+    public String visit(ArithemeticExpression n, A argu) {
+        String _ret = null;
         n.f0.accept(this, argu);
         return _ret;
     }
@@ -594,8 +609,8 @@ public class PrintVisitor<R, A> implements GJVisitor<R, A> {
      * | Identifier()
      * | IntegerLiteral()
      */
-    public R visit(ArrayorIdentifierorIntegerLiteral n, A argu) {
-        R _ret = null;
+    public String visit(ArrayorIdentifierorIntegerLiteral n, A argu) {
+        String _ret = null;
         n.f0.accept(this, argu);
         return _ret;
     }
@@ -605,8 +620,8 @@ public class PrintVisitor<R, A> implements GJVisitor<R, A> {
      * f1 -> "&&"
      * f2 -> Identifier()
      */
-    public R visit(AndExpression n, A argu) {
-        R _ret = null;
+    public String visit(AndExpression n, A argu) {
+        String _ret = null;
         n.f0.accept(this, argu);
         n.f1.accept(this, argu);
         n.f2.accept(this, argu);
@@ -618,8 +633,8 @@ public class PrintVisitor<R, A> implements GJVisitor<R, A> {
      * f1 -> "||"
      * f2 -> Identifier()
      */
-    public R visit(OrExpression n, A argu) {
-        R _ret = null;
+    public String visit(OrExpression n, A argu) {
+        String _ret = null;
         n.f0.accept(this, argu);
         n.f1.accept(this, argu);
         n.f2.accept(this, argu);
@@ -631,8 +646,8 @@ public class PrintVisitor<R, A> implements GJVisitor<R, A> {
      * f1 -> "<="
      * f2 -> IntegerOrIdentifier()
      */
-    public R visit(LTEExpression n, A argu) {
-        R _ret = null;
+    public String visit(LTEExpression n, A argu) {
+        String _ret = null;
         n.f0.accept(this, argu);
         n.f1.accept(this, argu);
         n.f2.accept(this, argu);
@@ -644,8 +659,8 @@ public class PrintVisitor<R, A> implements GJVisitor<R, A> {
      * f1 -> "<"
      * f2 -> IntegerOrIdentifier()
      */
-    public R visit(LTExpression n, A argu) {
-        R _ret = null;
+    public String visit(LTExpression n, A argu) {
+        String _ret = null;
         n.f0.accept(this, argu);
         n.f1.accept(this, argu);
         n.f2.accept(this, argu);
@@ -657,8 +672,8 @@ public class PrintVisitor<R, A> implements GJVisitor<R, A> {
      * f1 -> ">="
      * f2 -> IntegerOrIdentifier()
      */
-    public R visit(GTEExpression n, A argu) {
-        R _ret = null;
+    public String visit(GTEExpression n, A argu) {
+        String _ret = null;
         n.f0.accept(this, argu);
         n.f1.accept(this, argu);
         n.f2.accept(this, argu);
@@ -670,8 +685,8 @@ public class PrintVisitor<R, A> implements GJVisitor<R, A> {
      * f1 -> ">"
      * f2 -> IntegerOrIdentifier()
      */
-    public R visit(GTExpression n, A argu) {
-        R _ret = null;
+    public String visit(GTExpression n, A argu) {
+        String _ret = null;
         n.f0.accept(this, argu);
         n.f1.accept(this, argu);
         n.f2.accept(this, argu);
@@ -683,8 +698,8 @@ public class PrintVisitor<R, A> implements GJVisitor<R, A> {
      * f1 -> "=="
      * f2 -> IntegerOrIdentifier()
      */
-    public R visit(EQExpression n, A argu) {
-        R _ret = null;
+    public String visit(EQExpression n, A argu) {
+        String _ret = null;
         n.f0.accept(this, argu);
         n.f1.accept(this, argu);
         n.f2.accept(this, argu);
@@ -696,8 +711,8 @@ public class PrintVisitor<R, A> implements GJVisitor<R, A> {
      * f1 -> "!="
      * f2 -> IntegerOrIdentifier()
      */
-    public R visit(NeqExpression n, A argu) {
-        R _ret = null;
+    public String visit(NeqExpression n, A argu) {
+        String _ret = null;
         n.f0.accept(this, argu);
         n.f1.accept(this, argu);
         n.f2.accept(this, argu);
@@ -709,8 +724,8 @@ public class PrintVisitor<R, A> implements GJVisitor<R, A> {
      * f1 -> "+"
      * f2 -> ArrayorIdentifierorIntegerLiteral()
      */
-    public R visit(PlusExpression n, A argu) {
-        R _ret = null;
+    public String visit(PlusExpression n, A argu) {
+        String _ret = null;
         n.f0.accept(this, argu);
         n.f1.accept(this, argu);
         n.f2.accept(this, argu);
@@ -722,8 +737,8 @@ public class PrintVisitor<R, A> implements GJVisitor<R, A> {
      * f1 -> "-"
      * f2 -> ArrayorIdentifierorIntegerLiteral()
      */
-    public R visit(MinusExpression n, A argu) {
-        R _ret = null;
+    public String visit(MinusExpression n, A argu) {
+        String _ret = null;
         n.f0.accept(this, argu);
         n.f1.accept(this, argu);
         n.f2.accept(this, argu);
@@ -735,8 +750,8 @@ public class PrintVisitor<R, A> implements GJVisitor<R, A> {
      * f1 -> "*"
      * f2 -> ArrayorIdentifierorIntegerLiteral()
      */
-    public R visit(TimesExpression n, A argu) {
-        R _ret = null;
+    public String visit(TimesExpression n, A argu) {
+        String _ret = null;
         n.f0.accept(this, argu);
         n.f1.accept(this, argu);
         n.f2.accept(this, argu);
@@ -748,8 +763,8 @@ public class PrintVisitor<R, A> implements GJVisitor<R, A> {
      * f1 -> "/"
      * f2 -> ArrayorIdentifierorIntegerLiteral()
      */
-    public R visit(DivExpression n, A argu) {
-        R _ret = null;
+    public String visit(DivExpression n, A argu) {
+        String _ret = null;
         n.f0.accept(this, argu);
         n.f1.accept(this, argu);
         n.f2.accept(this, argu);
@@ -762,8 +777,8 @@ public class PrintVisitor<R, A> implements GJVisitor<R, A> {
      * f2 -> IntegerOrIdentifier()
      * f3 -> "]"
      */
-    public R visit(ArrayLookup n, A argu) {
-        R _ret = null;
+    public String visit(ArrayLookup n, A argu) {
+        String _ret = null;
         n.f0.accept(this, argu);
         n.f1.accept(this, argu);
         n.f2.accept(this, argu);
@@ -776,8 +791,8 @@ public class PrintVisitor<R, A> implements GJVisitor<R, A> {
      * f1 -> "."
      * f2 -> "length"
      */
-    public R visit(ArrayLength n, A argu) {
-        R _ret = null;
+    public String visit(ArrayLength n, A argu) {
+        String _ret = null;
         n.f0.accept(this, argu);
         n.f1.accept(this, argu);
         n.f2.accept(this, argu);
@@ -792,8 +807,8 @@ public class PrintVisitor<R, A> implements GJVisitor<R, A> {
      * f4 -> ( ArgList() )?
      * f5 -> ")"
      */
-    public R visit(MessageSend n, A argu) {
-        R _ret = null;
+    public String visit(MessageSend n, A argu) {
+        String _ret = null;
         n.f0.accept(this, argu);
         n.f1.accept(this, argu);
         n.f2.accept(this, argu);
@@ -807,8 +822,8 @@ public class PrintVisitor<R, A> implements GJVisitor<R, A> {
      * f0 -> Identifier()
      * f1 -> ( ArgRest() )*
      */
-    public R visit(ArgList n, A argu) {
-        R _ret = null;
+    public String visit(ArgList n, A argu) {
+        String _ret = null;
         n.f0.accept(this, argu);
         n.f1.accept(this, argu);
         return _ret;
@@ -818,8 +833,8 @@ public class PrintVisitor<R, A> implements GJVisitor<R, A> {
      * f0 -> ","
      * f1 -> Identifier()
      */
-    public R visit(ArgRest n, A argu) {
-        R _ret = null;
+    public String visit(ArgRest n, A argu) {
+        String _ret = null;
         n.f0.accept(this, argu);
         n.f1.accept(this, argu);
         return _ret;
@@ -835,54 +850,54 @@ public class PrintVisitor<R, A> implements GJVisitor<R, A> {
      * | AllocationExpression()
      * | NotExpression()
      */
-    public R visit(PrimaryExpression n, A argu) {
-        R _ret = null;
-        n.f0.accept(this, argu);
+    public String visit(PrimaryExpression n, A argu) {
+        String _ret = null;
+        _ret = n.f0.accept(this, argu);
         return _ret;
     }
 
     /**
      * f0 -> <INTEGER_LITERAL>
      */
-    public R visit(IntegerLiteral n, A argu) {
-        R _ret = null;
-        n.f0.accept(this, argu);
+    public String visit(IntegerLiteral n, A argu) {
+        String _ret = null;
+        _ret = n.f0.accept(this, argu);
         return _ret;
     }
 
     /**
      * f0 -> "true"
      */
-    public R visit(TrueLiteral n, A argu) {
-        R _ret = null;
-        n.f0.accept(this, argu);
+    public String visit(TrueLiteral n, A argu) {
+        String _ret = null;
+        _ret = n.f0.accept(this, argu);
         return _ret;
     }
 
     /**
      * f0 -> "false"
      */
-    public R visit(FalseLiteral n, A argu) {
-        R _ret = null;
-        n.f0.accept(this, argu);
+    public String visit(FalseLiteral n, A argu) {
+        String _ret = null;
+        _ret = n.f0.accept(this, argu);
         return _ret;
     }
 
     /**
      * f0 -> <IDENTIFIER>
      */
-    public R visit(Identifier n, A argu) {
-        R _ret = null;
-        n.f0.accept(this, argu);
+    public String visit(Identifier n, A argu) {
+        String _ret = null;
+        _ret = n.f0.accept(this, argu);
         return _ret;
     }
 
     /**
      * f0 -> "this"
      */
-    public R visit(ThisExpression n, A argu) {
-        R _ret = null;
-        n.f0.accept(this, argu);
+    public String visit(ThisExpression n, A argu) {
+        String _ret = null;
+        _ret = n.f0.accept(this, argu);
         return _ret;
     }
 
@@ -893,8 +908,8 @@ public class PrintVisitor<R, A> implements GJVisitor<R, A> {
      * f3 -> IntegerOrIdentifier()
      * f4 -> "]"
      */
-    public R visit(ArrayAllocationExpression n, A argu) {
-        R _ret = null;
+    public String visit(ArrayAllocationExpression n, A argu) {
+        String _ret = null;
         n.f0.accept(this, argu);
         n.f1.accept(this, argu);
         n.f2.accept(this, argu);
@@ -909,8 +924,8 @@ public class PrintVisitor<R, A> implements GJVisitor<R, A> {
      * f2 -> "("
      * f3 -> ")"
      */
-    public R visit(AllocationExpression n, A argu) {
-        R _ret = null;
+    public String visit(AllocationExpression n, A argu) {
+        String _ret = null;
         n.f0.accept(this, argu);
         n.f1.accept(this, argu);
         n.f2.accept(this, argu);
@@ -922,8 +937,8 @@ public class PrintVisitor<R, A> implements GJVisitor<R, A> {
      * f0 -> "!"
      * f1 -> Identifier()
      */
-    public R visit(NotExpression n, A argu) {
-        R _ret = null;
+    public String visit(NotExpression n, A argu) {
+        String _ret = null;
         n.f0.accept(this, argu);
         n.f1.accept(this, argu);
         return _ret;
@@ -933,8 +948,8 @@ public class PrintVisitor<R, A> implements GJVisitor<R, A> {
      * f0 -> IntegerLiteral()
      * | Identifier()
      */
-    public R visit(IntegerOrIdentifier n, A argu) {
-        R _ret = null;
+    public String visit(IntegerOrIdentifier n, A argu) {
+        String _ret = null;
         n.f0.accept(this, argu);
         return _ret;
     }
@@ -945,8 +960,8 @@ public class PrintVisitor<R, A> implements GJVisitor<R, A> {
      * f2 -> ArithemeticExpression()
      * f3 -> ";"
      */
-    public R visit(ArrayAssignArithemeticExpression n, A argu) {
-        R _ret = null;
+    public String visit(ArrayAssignArithemeticExpression n, A argu) {
+        String _ret = null;
         n.f0.accept(this, argu);
         n.f1.accept(this, argu);
         n.f2.accept(this, argu);
@@ -960,8 +975,8 @@ public class PrintVisitor<R, A> implements GJVisitor<R, A> {
      * f2 -> ArrayorIdentifierorIntegerLiteral()
      * f3 -> ";"
      */
-    public R visit(ArrayAssignArrayOrIntegerLiteralorIdentifier n, A argu) {
-        R _ret = null;
+    public String visit(ArrayAssignArrayOrIntegerLiteralorIdentifier n, A argu) {
+        String _ret = null;
         n.f0.accept(this, argu);
         n.f1.accept(this, argu);
         n.f2.accept(this, argu);
