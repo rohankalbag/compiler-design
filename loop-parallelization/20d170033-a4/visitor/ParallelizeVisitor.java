@@ -56,6 +56,7 @@ public class ParallelizeVisitor<R, A> implements GJVisitor<String, A> {
    public String currClass;
    public String currMethod;
    public LoopInfo currLoop;
+   public boolean DEBUG = false;
 
    /**
     * f0 -> MainClass()
@@ -352,6 +353,536 @@ public class ParallelizeVisitor<R, A> implements GJVisitor<String, A> {
       String id = n.f0.accept(this, argu);
       n.f1.accept(this, argu);
       n.f2.accept(this, argu);
+      if (currLoop != null && !currLoop.functionOfIterVar.containsKey(id)) {
+         if (DEBUG) {
+            System.out.println("LHS id: " + id);
+            System.out.println("Loop var: " + currLoop.loop_var);
+         }
+         if (n.f2.f0.choice instanceof PrimaryExpression) {
+            if (DEBUG) {
+               System.out.println("RHS is Primary Expression");
+            }
+            PrimaryExpression pe = (PrimaryExpression) n.f2.f0.choice;
+            if (pe.f0.choice instanceof Identifier) {
+               String id2 = ((Identifier) pe.f0.choice).f0.tokenImage;
+               if (currLoop.functionOfIterVar.containsKey(id2)) {
+                  //// currLoop.isFunctOfLoopVar.add(id);
+                  currLoop.functionOfIterVar.put(id, currLoop.functionOfIterVar.get(id2));
+               } else {
+                  //// currLoop.isFunctOfLoopVar.remove(id);
+                  currLoop.functionOfIterVar.remove(id);
+                  currLoop.array_access_across_iters = true;
+               }
+            }
+         } else if (n.f2.f0.choice instanceof PlusExpression) {
+            PlusExpression pe = (PlusExpression) n.f2.f0.choice;
+            if (pe.f0.f0.choice instanceof Identifier && pe.f2.f0.choice instanceof Identifier) {
+               String id1 = ((Identifier) pe.f0.f0.choice).f0.tokenImage;
+               String id2 = ((Identifier) pe.f2.f0.choice).f0.tokenImage;
+               if (currLoop.functionOfIterVar.containsKey(id1) && currLoop.functionOfIterVar.containsKey(id2)) {
+                  //// currLoop.isFunctOfLoopVar.add(id);
+                  id1 = currLoop.functionOfIterVar.get(id1);
+                  id2 = currLoop.functionOfIterVar.get(id2);
+                  currLoop.functionOfIterVar.put(id, id1 + " + " + id2);
+                  if (DEBUG) {
+                     System.out.println(id + " is a function of iter var: " + currLoop.functionOfIterVar.get(id));
+                  }
+               } else if (currLoop.functionOfIterVar.containsKey(id1)) {
+                  //// currLoop.isFunctOfLoopVar.add(id);
+                  id1 = currLoop.functionOfIterVar.get(id1);
+                  currLoop.functionOfIterVar.put(id, id1 + " + " + id2);
+                  currLoop.array_access_across_iters = true;
+                  if (DEBUG) {
+                     System.out.println(id + " is a function of iter var: " + currLoop.functionOfIterVar.get(id));
+                     System.out.println("But array access across iterations: " + id2);
+                  }
+               } else if (currLoop.functionOfIterVar.containsKey(id2)) {
+                  //// currLoop.isFunctOfLoopVar.add(id);
+                  id2 = currLoop.functionOfIterVar.get(id2);
+                  currLoop.functionOfIterVar.put(id, id1 + " + " + id2);
+                  currLoop.array_access_across_iters = true;
+                  if (DEBUG) {
+                     System.out.println(id + " is a function of iter var: " + currLoop.functionOfIterVar.get(id));
+                     System.out.println("But array access across iterations: " + id1);
+                  }
+               } else {
+                  currLoop.array_access_across_iters = true;
+                  //// currLoop.isFunctOfLoopVar.remove(id);
+                  currLoop.functionOfIterVar.remove(id);
+                  if (DEBUG) {
+                     System.out.println(id + " is not a function of iter var: " + currLoop.functionOfIterVar.get(id));
+                     System.out.println("And array access across iterations: " + id1);
+                  }
+               }
+            } else if (pe.f0.f0.choice instanceof Identifier && pe.f2.f0.choice instanceof IntegerLiteral) {
+               String id1 = ((Identifier) pe.f0.f0.choice).f0.tokenImage;
+               String id2 = ((IntegerLiteral) pe.f2.f0.choice).f0.tokenImage;
+               if (currLoop.functionOfIterVar.containsKey(id1)) {
+                  id1 = currLoop.functionOfIterVar.get(id1);
+                  currLoop.functionOfIterVar.put(id, id1 + " + " + id2);
+                  if (DEBUG) {
+                     System.out.println(id + " is a function of iter var: " + currLoop.functionOfIterVar.get(id));
+                  }
+               } else {
+                  currLoop.array_access_across_iters = true;
+                  //// currLoop.isFunctOfLoopVar.remove(id);
+                  currLoop.functionOfIterVar.remove(id);
+                  if (DEBUG) {
+                     System.out.println(id + " is not a function of iter var: " + currLoop.functionOfIterVar.get(id));
+                     System.out.println("And array access across iterations: " + id1);
+                  }
+               }
+            } else if (pe.f0.f0.choice instanceof IntegerLiteral && pe.f2.f0.choice instanceof Identifier) {
+               String id2 = ((IntegerLiteral) pe.f0.f0.choice).f0.tokenImage;
+               String id1 = ((Identifier) pe.f2.f0.choice).f0.tokenImage;
+               if (currLoop.functionOfIterVar.containsKey(id1)) {
+                  id1 = currLoop.functionOfIterVar.get(id1);
+                  currLoop.functionOfIterVar.put(id, id1 + " + " + id2);
+                  if (DEBUG) {
+                     System.out.println(id + " is a function of iter var: " + currLoop.functionOfIterVar.get(id));
+                  }
+               } else {
+                  currLoop.array_access_across_iters = true;
+                  //// currLoop.isFunctOfLoopVar.remove(id);
+                  currLoop.functionOfIterVar.remove(id);
+                  if (DEBUG) {
+                     System.out.println(id + " is not a function of iter var: " + currLoop.functionOfIterVar.get(id));
+                     System.out.println("And array access across iterations: " + id1);
+                  }
+               }
+            }
+         } else if (n.f2.f0.choice instanceof MinusExpression) {
+            MinusExpression pe = (MinusExpression) n.f2.f0.choice;
+            if (pe.f0.f0.choice instanceof Identifier && pe.f2.f0.choice instanceof Identifier) {
+               String id1 = ((Identifier) pe.f0.f0.choice).f0.tokenImage;
+               String id2 = ((Identifier) pe.f2.f0.choice).f0.tokenImage;
+               if (currLoop.functionOfIterVar.containsKey(id1) && currLoop.functionOfIterVar.containsKey(id2)) {
+                  //// currLoop.isFunctOfLoopVar.add(id);
+                  id1 = currLoop.functionOfIterVar.get(id1);
+                  id2 = currLoop.functionOfIterVar.get(id2);
+                  currLoop.functionOfIterVar.put(id, id1 + " - " + id2);
+                  if (DEBUG) {
+                     System.out.println(id + " is a function of iter var: " + currLoop.functionOfIterVar.get(id));
+                  }
+               } else if (currLoop.functionOfIterVar.containsKey(id1)) {
+                  //// currLoop.isFunctOfLoopVar.add(id);
+                  id1 = currLoop.functionOfIterVar.get(id1);
+                  currLoop.functionOfIterVar.put(id, id1 + " - " + id2);
+                  currLoop.array_access_across_iters = true;
+                  if (DEBUG) {
+                     System.out.println(id + " is a function of iter var: " + currLoop.functionOfIterVar.get(id));
+                     System.out.println("But array access across iterations: " + id2);
+                  }
+               } else if (currLoop.functionOfIterVar.containsKey(id2)) {
+                  //// currLoop.isFunctOfLoopVar.add(id);
+                  id2 = currLoop.functionOfIterVar.get(id2);
+                  currLoop.functionOfIterVar.put(id, id1 + " - " + id2);
+                  currLoop.array_access_across_iters = true;
+                  if (DEBUG) {
+                     System.out.println(id + " is a function of iter var: " + currLoop.functionOfIterVar.get(id));
+                     System.out.println("But array access across iterations: " + id1);
+                  }
+               } else {
+                  currLoop.array_access_across_iters = true;
+                  //// currLoop.isFunctOfLoopVar.remove(id);
+                  currLoop.functionOfIterVar.remove(id);
+                  if (DEBUG) {
+                     System.out.println(id + " is not a function of iter var: " + currLoop.functionOfIterVar.get(id));
+                     System.out.println("And array access across iterations: " + id1);
+                  }
+               }
+            } else if (pe.f0.f0.choice instanceof Identifier && pe.f2.f0.choice instanceof IntegerLiteral) {
+               String id1 = ((Identifier) pe.f0.f0.choice).f0.tokenImage;
+               String id2 = ((IntegerLiteral) pe.f2.f0.choice).f0.tokenImage;
+               if (currLoop.functionOfIterVar.containsKey(id1)) {
+                  id1 = currLoop.functionOfIterVar.get(id1);
+                  currLoop.functionOfIterVar.put(id, id1 + " - " + id2);
+                  if (DEBUG) {
+                     System.out.println(id + " is a function of iter var: " + currLoop.functionOfIterVar.get(id));
+                  }
+               } else {
+                  currLoop.array_access_across_iters = true;
+                  //// currLoop.isFunctOfLoopVar.remove(id);
+                  currLoop.functionOfIterVar.remove(id);
+                  if (DEBUG) {
+                     System.out.println(id + " is not a function of iter var: " + currLoop.functionOfIterVar.get(id));
+                     System.out.println("And array access across iterations: " + id1);
+                  }
+               }
+            } else if (pe.f0.f0.choice instanceof IntegerLiteral && pe.f2.f0.choice instanceof Identifier) {
+               String id2 = ((IntegerLiteral) pe.f0.f0.choice).f0.tokenImage;
+               String id1 = ((Identifier) pe.f2.f0.choice).f0.tokenImage;
+               if (currLoop.functionOfIterVar.containsKey(id1)) {
+                  id1 = currLoop.functionOfIterVar.get(id1);
+                  currLoop.functionOfIterVar.put(id, id1 + " - " + id2);
+                  if (DEBUG) {
+                     System.out.println(id + " is a function of iter var: " + currLoop.functionOfIterVar.get(id));
+                  }
+               } else {
+                  currLoop.array_access_across_iters = true;
+                  //// currLoop.isFunctOfLoopVar.remove(id);
+                  currLoop.functionOfIterVar.remove(id);
+                  if (DEBUG) {
+                     System.out.println(id + " is not a function of iter var: " + currLoop.functionOfIterVar.get(id));
+                     System.out.println("And array access across iterations: " + id1);
+                  }
+               }
+            }
+         } else if (n.f2.f0.choice instanceof TimesExpression) {
+            TimesExpression pe = (TimesExpression) n.f2.f0.choice;
+            if (pe.f0.f0.choice instanceof Identifier && pe.f2.f0.choice instanceof Identifier) {
+               String id1 = ((Identifier) pe.f0.f0.choice).f0.tokenImage;
+               String id2 = ((Identifier) pe.f2.f0.choice).f0.tokenImage;
+               if (currLoop.functionOfIterVar.containsKey(id1) && currLoop.functionOfIterVar.containsKey(id2)) {
+                  //// currLoop.isFunctOfLoopVar.add(id);
+                  id1 = currLoop.functionOfIterVar.get(id1);
+                  id2 = currLoop.functionOfIterVar.get(id2);
+                  currLoop.functionOfIterVar.put(id, id1 + " * " + id2);
+                  if (DEBUG) {
+                     System.out.println(id + " is a function of iter var: " + currLoop.functionOfIterVar.get(id));
+                  }
+               } else if (currLoop.functionOfIterVar.containsKey(id1)) {
+                  //// currLoop.isFunctOfLoopVar.add(id);
+                  id1 = currLoop.functionOfIterVar.get(id1);
+                  currLoop.functionOfIterVar.put(id, id1 + " * " + id2);
+                  currLoop.array_access_across_iters = true;
+                  if (DEBUG) {
+                     System.out.println(id + " is a function of iter var: " + currLoop.functionOfIterVar.get(id));
+                     System.out.println("But array access across iterations: " + id2);
+                  }
+               } else if (currLoop.functionOfIterVar.containsKey(id2)) {
+                  //// currLoop.isFunctOfLoopVar.add(id);
+                  id2 = currLoop.functionOfIterVar.get(id2);
+                  currLoop.functionOfIterVar.put(id, id1 + " * " + id2);
+                  currLoop.array_access_across_iters = true;
+                  if (DEBUG) {
+                     System.out.println(id + " is a function of iter var: " + currLoop.functionOfIterVar.get(id));
+                     System.out.println("But array access across iterations: " + id1);
+                  }
+               } else {
+                  currLoop.array_access_across_iters = true;
+                  //// currLoop.isFunctOfLoopVar.remove(id);
+                  currLoop.functionOfIterVar.remove(id);
+                  if (DEBUG) {
+                     System.out.println(id + " is not a function of iter var: " + currLoop.functionOfIterVar.get(id));
+                     System.out.println("And array access across iterations: " + id1);
+                  }
+               }
+            } else if (pe.f0.f0.choice instanceof Identifier && pe.f2.f0.choice instanceof IntegerLiteral) {
+               String id1 = ((Identifier) pe.f0.f0.choice).f0.tokenImage;
+               String id2 = ((IntegerLiteral) pe.f2.f0.choice).f0.tokenImage;
+               if (currLoop.functionOfIterVar.containsKey(id1)) {
+                  id1 = currLoop.functionOfIterVar.get(id1);
+                  currLoop.functionOfIterVar.put(id, id1 + " * " + id2);
+                  if (DEBUG) {
+                     System.out.println(id + " is a function of iter var: " + currLoop.functionOfIterVar.get(id));
+                  }
+               } else {
+                  currLoop.array_access_across_iters = true;
+                  //// currLoop.isFunctOfLoopVar.remove(id);
+                  currLoop.functionOfIterVar.remove(id);
+                  if (DEBUG) {
+                     System.out.println(id + " is not a function of iter var: " + currLoop.functionOfIterVar.get(id));
+                     System.out.println("And array access across iterations: " + id1);
+                  }
+               }
+            } else if (pe.f0.f0.choice instanceof IntegerLiteral && pe.f2.f0.choice instanceof Identifier) {
+               String id2 = ((IntegerLiteral) pe.f0.f0.choice).f0.tokenImage;
+               String id1 = ((Identifier) pe.f2.f0.choice).f0.tokenImage;
+               if (currLoop.functionOfIterVar.containsKey(id1)) {
+                  id1 = currLoop.functionOfIterVar.get(id1);
+                  currLoop.functionOfIterVar.put(id, id1 + " * " + id2);
+                  if (DEBUG) {
+                     System.out.println(id + " is a function of iter var: " + currLoop.functionOfIterVar.get(id));
+                  }
+               } else {
+                  currLoop.array_access_across_iters = true;
+                  //// currLoop.isFunctOfLoopVar.remove(id);
+                  currLoop.functionOfIterVar.remove(id);
+                  if (DEBUG) {
+                     System.out.println(id + " is not a function of iter var: " + currLoop.functionOfIterVar.get(id));
+                     System.out.println("And array access across iterations: " + id1);
+                  }
+               }
+            }
+         } else if (n.f2.f0.choice instanceof DivExpression) {
+            DivExpression pe = (DivExpression) n.f2.f0.choice;
+            if (pe.f0.f0.choice instanceof Identifier && pe.f2.f0.choice instanceof Identifier) {
+               String id1 = ((Identifier) pe.f0.f0.choice).f0.tokenImage;
+               String id2 = ((Identifier) pe.f2.f0.choice).f0.tokenImage;
+               if (currLoop.functionOfIterVar.containsKey(id1) && currLoop.functionOfIterVar.containsKey(id2)) {
+                  //// currLoop.isFunctOfLoopVar.add(id);
+                  id1 = currLoop.functionOfIterVar.get(id1);
+                  id2 = currLoop.functionOfIterVar.get(id2);
+                  currLoop.functionOfIterVar.put(id, id1 + " / " + id2);
+                  if (DEBUG) {
+                     System.out.println(id + " is a function of iter var: " + currLoop.functionOfIterVar.get(id));
+                  }
+               } else if (currLoop.functionOfIterVar.containsKey(id1)) {
+                  //// currLoop.isFunctOfLoopVar.add(id);
+                  id1 = currLoop.functionOfIterVar.get(id1);
+                  currLoop.functionOfIterVar.put(id, id1 + " / " + id2);
+                  currLoop.array_access_across_iters = true;
+                  if (DEBUG) {
+                     System.out.println(id + " is a function of iter var: " + currLoop.functionOfIterVar.get(id));
+                     System.out.println("But array access across iterations: " + id2);
+                  }
+               } else if (currLoop.functionOfIterVar.containsKey(id2)) {
+                  //// currLoop.isFunctOfLoopVar.add(id);
+                  id2 = currLoop.functionOfIterVar.get(id2);
+                  currLoop.functionOfIterVar.put(id, id1 + " / " + id2);
+                  currLoop.array_access_across_iters = true;
+                  if (DEBUG) {
+                     System.out.println(id + " is a function of iter var: " + currLoop.functionOfIterVar.get(id));
+                     System.out.println("But array access across iterations: " + id1);
+                  }
+               } else {
+                  currLoop.array_access_across_iters = true;
+                  //// currLoop.isFunctOfLoopVar.remove(id);
+                  currLoop.functionOfIterVar.remove(id);
+                  if (DEBUG) {
+                     System.out.println(id + " is not a function of iter var: " + currLoop.functionOfIterVar.get(id));
+                     System.out.println("And array access across iterations: " + id1);
+                  }
+               }
+            } else if (pe.f0.f0.choice instanceof Identifier && pe.f2.f0.choice instanceof IntegerLiteral) {
+               String id1 = ((Identifier) pe.f0.f0.choice).f0.tokenImage;
+               String id2 = ((IntegerLiteral) pe.f2.f0.choice).f0.tokenImage;
+               if (currLoop.functionOfIterVar.containsKey(id1)) {
+                  id1 = currLoop.functionOfIterVar.get(id1);
+                  currLoop.functionOfIterVar.put(id, id1 + " / " + id2);
+                  if (DEBUG) {
+                     System.out.println(id + " is a function of iter var: " + currLoop.functionOfIterVar.get(id));
+                  }
+               } else {
+                  currLoop.array_access_across_iters = true;
+                  //// currLoop.isFunctOfLoopVar.remove(id);
+                  currLoop.functionOfIterVar.remove(id);
+                  if (DEBUG) {
+                     System.out.println(id + " is not a function of iter var: " + currLoop.functionOfIterVar.get(id));
+                     System.out.println("And array access across iterations: " + id1);
+                  }
+               }
+            } else if (pe.f0.f0.choice instanceof IntegerLiteral && pe.f2.f0.choice instanceof Identifier) {
+               String id2 = ((IntegerLiteral) pe.f0.f0.choice).f0.tokenImage;
+               String id1 = ((Identifier) pe.f2.f0.choice).f0.tokenImage;
+               if (currLoop.functionOfIterVar.containsKey(id1)) {
+                  id1 = currLoop.functionOfIterVar.get(id1);
+                  currLoop.functionOfIterVar.put(id, id1 + " / " + id2);
+                  if (DEBUG) {
+                     System.out.println(id + " is a function of iter var: " + currLoop.functionOfIterVar.get(id));
+                  }
+               } else {
+                  currLoop.array_access_across_iters = true;
+                  //// currLoop.isFunctOfLoopVar.remove(id);
+                  currLoop.functionOfIterVar.remove(id);
+                  if (DEBUG) {
+                     System.out.println(id + " is not a function of iter var: " + currLoop.functionOfIterVar.get(id));
+                     System.out.println("And array access across iterations: " + id1);
+                  }
+               }
+            }
+         }
+         if (DEBUG) {
+            System.out.println("Functions of iter var: " + currLoop.functionOfIterVar.keySet());
+         }
+      } else if (currLoop != null && currLoop.functionOfIterVar.containsKey(id)) {
+         if (DEBUG) {
+            System.out.println("LHS id: " + id);
+            System.out.println("Loop var: " + currLoop.loop_var);
+         }
+         if (n.f2.f0.choice instanceof PrimaryExpression) {
+            if (DEBUG) {
+               System.out.println("RHS is Primary Expression");
+            }
+            PrimaryExpression pe = (PrimaryExpression) n.f2.f0.choice;
+            if (pe.f0.choice instanceof Identifier) {
+               String id2 = ((Identifier) pe.f0.choice).f0.tokenImage;
+               if (currLoop.loop_var.equals(id2)) {
+                  //// currLoop.isFunctOfLoopVar.add(id);
+                  currLoop.functionOfIterVar.put(id, id2);
+               } else if (currLoop.functionOfIterVar.containsKey(id2)) {
+                  //// currLoop.isFunctOfLoopVar.add(id);
+                  currLoop.functionOfIterVar.put(id, currLoop.functionOfIterVar.get(id2));
+               } else {
+                  //// currLoop.isFunctOfLoopVar.remove(id);
+                  currLoop.functionOfIterVar.remove(id);
+               }
+            }
+         } else if (n.f2.f0.choice instanceof PlusExpression) {
+            PlusExpression pe = (PlusExpression) n.f2.f0.choice;
+            if (pe.f0.f0.choice instanceof Identifier && pe.f2.f0.choice instanceof Identifier) {
+               String id1 = ((Identifier) pe.f0.f0.choice).f0.tokenImage;
+               String id2 = ((Identifier) pe.f2.f0.choice).f0.tokenImage;
+
+               if (currLoop.functionOfIterVar.containsKey(id1)) {
+                  id1 = "( " + currLoop.functionOfIterVar.get(id1) + " )";
+               }
+
+               if (currLoop.functionOfIterVar.containsKey(id2)) {
+                  id2 = "( " + currLoop.functionOfIterVar.get(id2) + " )";
+               }
+               currLoop.functionOfIterVar.put(id, id1 + " + " + id2);
+               if (DEBUG) {
+                  System.out.println(id + " is a function of iter var: " + currLoop.functionOfIterVar.get(id));
+               }
+
+            } else if (pe.f0.f0.choice instanceof Identifier && pe.f2.f0.choice instanceof IntegerLiteral) {
+               String id1 = ((Identifier) pe.f0.f0.choice).f0.tokenImage;
+               String id2 = ((IntegerLiteral) pe.f2.f0.choice).f0.tokenImage;
+
+               if (currLoop.functionOfIterVar.containsKey(id1)) {
+                  id1 = "( " + currLoop.functionOfIterVar.get(id1) + " )";
+               }
+
+               currLoop.functionOfIterVar.put(id, id1 + " + " + id2);
+               if (DEBUG) {
+                  System.out.println(id + " is a function of iter var: " + currLoop.functionOfIterVar.get(id));
+               }
+            } else if (pe.f0.f0.choice instanceof IntegerLiteral && pe.f2.f0.choice instanceof Identifier) {
+               String id1 = ((IntegerLiteral) pe.f0.f0.choice).f0.tokenImage;
+               String id2 = ((Identifier) pe.f2.f0.choice).f0.tokenImage;
+               if (currLoop.functionOfIterVar.containsKey(id2)) {
+                  id1 = "( " + currLoop.functionOfIterVar.get(id2) + " )";
+               }
+
+               currLoop.functionOfIterVar.put(id, id1 + " + " + id2);
+               if (DEBUG) {
+                  System.out.println(id + " is a function of iter var: " + currLoop.functionOfIterVar.get(id));
+               }
+            }
+         } else if (n.f2.f0.choice instanceof MinusExpression) {
+            MinusExpression pe = (MinusExpression) n.f2.f0.choice;
+            if (pe.f0.f0.choice instanceof Identifier && pe.f2.f0.choice instanceof Identifier) {
+               String id1 = ((Identifier) pe.f0.f0.choice).f0.tokenImage;
+               String id2 = ((Identifier) pe.f2.f0.choice).f0.tokenImage;
+
+               if (currLoop.functionOfIterVar.containsKey(id1)) {
+                  id1 = "( " + currLoop.functionOfIterVar.get(id1) + " )";
+               }
+
+               if (currLoop.functionOfIterVar.containsKey(id2)) {
+                  id2 = "( " + currLoop.functionOfIterVar.get(id2) + " )";
+               }
+               currLoop.functionOfIterVar.put(id, id1 + " - " + id2);
+               if (DEBUG) {
+                  System.out.println(id + " is a function of iter var: " + currLoop.functionOfIterVar.get(id));
+               }
+
+            } else if (pe.f0.f0.choice instanceof Identifier && pe.f2.f0.choice instanceof IntegerLiteral) {
+               String id1 = ((Identifier) pe.f0.f0.choice).f0.tokenImage;
+               String id2 = ((IntegerLiteral) pe.f2.f0.choice).f0.tokenImage;
+
+               if (currLoop.functionOfIterVar.containsKey(id1)) {
+                  id1 = "( " + currLoop.functionOfIterVar.get(id1) + " )";
+               }
+
+               currLoop.functionOfIterVar.put(id, id1 + " - " + id2);
+               if (DEBUG) {
+                  System.out.println(id + " is a function of iter var: " + currLoop.functionOfIterVar.get(id));
+               }
+            } else if (pe.f0.f0.choice instanceof IntegerLiteral && pe.f2.f0.choice instanceof Identifier) {
+               String id1 = ((IntegerLiteral) pe.f0.f0.choice).f0.tokenImage;
+               String id2 = ((Identifier) pe.f2.f0.choice).f0.tokenImage;
+               if (currLoop.functionOfIterVar.containsKey(id2)) {
+                  id1 = "( " + currLoop.functionOfIterVar.get(id2) + " )";
+               }
+
+               currLoop.functionOfIterVar.put(id, id1 + " - " + id2);
+               if (DEBUG) {
+                  System.out.println(id + " is a function of iter var: " + currLoop.functionOfIterVar.get(id));
+               }
+            }
+         } else if (n.f2.f0.choice instanceof TimesExpression) {
+            TimesExpression pe = (TimesExpression) n.f2.f0.choice;
+            if (pe.f0.f0.choice instanceof Identifier && pe.f2.f0.choice instanceof Identifier) {
+               String id1 = ((Identifier) pe.f0.f0.choice).f0.tokenImage;
+               String id2 = ((Identifier) pe.f2.f0.choice).f0.tokenImage;
+
+               if (currLoop.functionOfIterVar.containsKey(id1)) {
+                  id1 = "( " + currLoop.functionOfIterVar.get(id1) + " )";
+               }
+
+               if (currLoop.functionOfIterVar.containsKey(id2)) {
+                  id2 = "( " + currLoop.functionOfIterVar.get(id2) + " )";
+               }
+               currLoop.functionOfIterVar.put(id, id1 + " * " + id2);
+               if (DEBUG) {
+                  System.out.println(id + " is a function of iter var: " + currLoop.functionOfIterVar.get(id));
+               }
+
+            } else if (pe.f0.f0.choice instanceof Identifier && pe.f2.f0.choice instanceof IntegerLiteral) {
+               String id1 = ((Identifier) pe.f0.f0.choice).f0.tokenImage;
+               String id2 = ((IntegerLiteral) pe.f2.f0.choice).f0.tokenImage;
+
+               if (currLoop.functionOfIterVar.containsKey(id1)) {
+                  id1 = "( " + currLoop.functionOfIterVar.get(id1) + " )";
+               }
+
+               currLoop.functionOfIterVar.put(id, id1 + " * " + id2);
+               if (DEBUG) {
+                  System.out.println(id + " is a function of iter var: " + currLoop.functionOfIterVar.get(id));
+               }
+            } else if (pe.f0.f0.choice instanceof IntegerLiteral && pe.f2.f0.choice instanceof Identifier) {
+               String id1 = ((IntegerLiteral) pe.f0.f0.choice).f0.tokenImage;
+               String id2 = ((Identifier) pe.f2.f0.choice).f0.tokenImage;
+               if (currLoop.functionOfIterVar.containsKey(id2)) {
+                  id1 = "( " + currLoop.functionOfIterVar.get(id2) + " )";
+               }
+
+               currLoop.functionOfIterVar.put(id, id1 + " * " + id2);
+               if (DEBUG) {
+                  System.out.println(id + " is a function of iter var: " + currLoop.functionOfIterVar.get(id));
+               }
+            }
+         } else if (n.f2.f0.choice instanceof DivExpression) {
+            DivExpression pe = (DivExpression) n.f2.f0.choice;
+            if (pe.f0.f0.choice instanceof Identifier && pe.f2.f0.choice instanceof Identifier) {
+               String id1 = ((Identifier) pe.f0.f0.choice).f0.tokenImage;
+               String id2 = ((Identifier) pe.f2.f0.choice).f0.tokenImage;
+
+               if (currLoop.functionOfIterVar.containsKey(id1)) {
+                  id1 = "( " + currLoop.functionOfIterVar.get(id1) + " )";
+               }
+
+               if (currLoop.functionOfIterVar.containsKey(id2)) {
+                  id2 = "( " + currLoop.functionOfIterVar.get(id2) + " )";
+               }
+               currLoop.functionOfIterVar.put(id, id1 + " / " + id2);
+               if (DEBUG) {
+                  System.out.println(id + " is a function of iter var: " + currLoop.functionOfIterVar.get(id));
+               }
+
+            } else if (pe.f0.f0.choice instanceof Identifier && pe.f2.f0.choice instanceof IntegerLiteral) {
+               String id1 = ((Identifier) pe.f0.f0.choice).f0.tokenImage;
+               String id2 = ((IntegerLiteral) pe.f2.f0.choice).f0.tokenImage;
+
+               if (currLoop.functionOfIterVar.containsKey(id1)) {
+                  id1 = "( " + currLoop.functionOfIterVar.get(id1) + " )";
+               }
+
+               currLoop.functionOfIterVar.put(id, id1 + " / " + id2);
+               if (DEBUG) {
+                  System.out.println(id + " is a function of iter var: " + currLoop.functionOfIterVar.get(id));
+               }
+            } else if (pe.f0.f0.choice instanceof IntegerLiteral && pe.f2.f0.choice instanceof Identifier) {
+               String id1 = ((IntegerLiteral) pe.f0.f0.choice).f0.tokenImage;
+               String id2 = ((Identifier) pe.f2.f0.choice).f0.tokenImage;
+               if (currLoop.functionOfIterVar.containsKey(id2)) {
+                  id1 = "( " + currLoop.functionOfIterVar.get(id2) + " )";
+               }
+
+               currLoop.functionOfIterVar.put(id, id1 + " / " + id2);
+               if (DEBUG) {
+                  System.out.println(id + " is a function of iter var: " + currLoop.functionOfIterVar.get(id));
+               }
+            }
+         }
+         if (DEBUG) {
+            System.out.println("Functions of iter var: " + currLoop.functionOfIterVar.keySet());
+         }
+      }
+
       if (n.f2.f0.choice instanceof PrimaryExpression) {
          PrimaryExpression pe = (PrimaryExpression) n.f2.f0.choice;
          if (pe.f0.choice instanceof Identifier) {
@@ -473,6 +1004,8 @@ public class ParallelizeVisitor<R, A> implements GJVisitor<String, A> {
       n.f1.accept(this, argu);
       n.f2.accept(this, argu);
       currLoop.loop_var = n.f3.accept(this, argu);
+      // currLoop.isFunctOfLoopVar.add(currLoop.loop_var);
+      currLoop.functionOfIterVar.put(currLoop.loop_var, currLoop.loop_var);
       n.f4.accept(this, argu);
       n.f5.accept(this, argu);
       n.f6.accept(this, argu);
@@ -482,6 +1015,7 @@ public class ParallelizeVisitor<R, A> implements GJVisitor<String, A> {
       n.f10.accept(this, argu);
       n.f11.accept(this, argu);
       currLoop.CheckParallelizability();
+      currLoop = null;
       return _ret;
    }
 
@@ -954,6 +1488,75 @@ public class ParallelizeVisitor<R, A> implements GJVisitor<String, A> {
       n.f0.accept(this, argu);
       n.f1.accept(this, argu);
       n.f2.accept(this, argu);
+      MethodInfo currMethodInfo = classInfoMap.get(currClass).methods.get(currMethod);
+      if (currLoop != null && n.f2.f0.choice instanceof ArrayLookup) {
+         ArrayLookup rhsArrLookup = (ArrayLookup) n.f2.f0.choice;
+         String rhsArrId = rhsArrLookup.f0.f0.tokenImage;
+         if (n.f0.f2.f0.choice instanceof Identifier && rhsArrLookup.f2.f0.choice instanceof Identifier) {
+            String lhsIndId = ((Identifier) n.f0.f2.f0.choice).f0.tokenImage;
+            String rhsIndId = ((Identifier) rhsArrLookup.f2.f0.choice).f0.tokenImage;
+            String lhsArrId = n.f0.f0.f0.tokenImage;
+            if (DEBUG) {
+               System.out.println("lhsId: " + lhsIndId + " : " + " rhsId: " + rhsIndId);
+               System.out.println("functions of iter var: " + currLoop.functionOfIterVar.keySet());
+            }
+
+            if (currLoop.functionOfIterVar.containsKey(lhsIndId) && currLoop.functionOfIterVar.containsKey(rhsIndId)) {
+               if (DEBUG) {
+                  System.out.println("Both arrays are functions of loop var");
+               }
+               currLoop.ComputeDiophantine(currLoop.functionOfIterVar.get(lhsIndId),
+                     currLoop.functionOfIterVar.get(rhsIndId));
+            } else if (currLoop.functionOfIterVar.containsKey(lhsIndId)) {
+               currLoop.array_access_with_extn_var = true;
+            } else if (currLoop.functionOfIterVar.containsKey(rhsIndId)) {
+            } else {
+            }
+            if (currMethodInfo.aliasWithArrayParams.contains(lhsArrId)
+                  || currMethodInfo.aliasWithArrayParams.contains(rhsArrId)) {
+               if (DEBUG) {
+                  System.out.println("Array aliases with array parameters");
+               }
+               currLoop.array_aliases_with_params = true;
+            } else if (currMethodInfo.array_variables.get(lhsArrId).contains(rhsArrId)) {
+               currLoop.AccessedArray(lhsArrId, rhsArrId);
+            } else if (currMethodInfo.array_variables.get(rhsArrId).contains(lhsArrId)) {
+               currLoop.AccessedArray(lhsArrId, rhsArrId);
+            } else if (rhsArrId == lhsArrId) {
+               currLoop.AccessedArray(lhsArrId, rhsArrId);
+            }
+         } else if (n.f0.f2.f0.choice instanceof Identifier
+               && rhsArrLookup.f2.f0.choice instanceof IntegerLiteral) {
+            String lhsIndId = ((Identifier) n.f0.f2.f0.choice).f0.tokenImage;
+            if (!currLoop.functionOfIterVar.containsKey(lhsIndId)) {
+               currLoop.array_access_with_extn_var = true;
+            }
+         } else if (n.f0.f2.f0.choice instanceof IntegerLiteral
+               && rhsArrLookup.f2.f0.choice instanceof Identifier) {
+            String rhsIndId = ((Identifier) rhsArrLookup.f2.f0.choice).f0.tokenImage;
+            if (currLoop.functionOfIterVar.containsKey(rhsIndId)) {
+               currLoop.array_const_write_across_iters = true;
+            }
+         } else if (n.f0.f2.f0.choice instanceof IntegerLiteral
+               && rhsArrLookup.f2.f0.choice instanceof IntegerLiteral) {
+         }
+      } else if (currLoop != null && n.f2.f0.choice instanceof Identifier) {
+         String rhsId = ((Identifier) n.f2.f0.choice).f0.tokenImage;
+         if (n.f0.f2.f0.choice instanceof Identifier) {
+            String lhsIndId = ((Identifier) n.f0.f2.f0.choice).f0.tokenImage;
+            if (currLoop.functionOfIterVar.containsKey(lhsIndId) && currLoop.functionOfIterVar.containsKey(rhsId)) {
+            } else if (currLoop.functionOfIterVar.containsKey(lhsIndId)) {
+            } else if (currLoop.functionOfIterVar.containsKey(rhsId)) {
+               currLoop.array_const_write_across_iters = true;
+            } else {
+            }
+         } else if (n.f0.f2.f0.choice instanceof IntegerLiteral) {
+            if (currLoop.functionOfIterVar.containsKey(rhsId)) {
+               currLoop.array_const_write_across_iters = true;
+            }
+         }
+      } else if (currLoop != null && n.f2.f0.choice instanceof IntegerLiteral) {
+      }
       n.f3.accept(this, argu);
       return _ret;
    }
