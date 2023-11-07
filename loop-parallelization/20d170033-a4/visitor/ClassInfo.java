@@ -16,8 +16,40 @@ class Diophantine {
     public String x;
     public int b;
 
+    Diophantine() {
+        a = 0;
+        x = "";
+        b = 0;
+    }
+
+    Diophantine(Diophantine d) {
+        a = d.a;
+        x = d.x;
+        b = d.b;
+    }
+
     public void Visualize() {
         System.out.println(a + " * " + x + " + " + b);
+    }
+
+    public void add(Diophantine d) {
+        a += d.a;
+        b += d.b;
+    }
+
+    public void sub(Diophantine d) {
+        a -= d.a;
+        b -= d.b;
+    }
+
+    public void mul(Diophantine d) {
+        a = a * d.b;
+        b = b * d.b;
+    }
+
+    public void div(Diophantine d) {
+        a = a / d.b;
+        b = b / d.b;
     }
 }
 
@@ -68,16 +100,16 @@ class LoopInfo {
     public boolean array_access_across_iters;
     public boolean gcd_test_check;
     public int num_array_accesses;
-    List<List<String>> array_accesses;
     Set<String> isFunctOfLoopVar;
-    Map<String, String> functionOfIterVar;
+    Set<String> refFromOut;
+    Map<String, Diophantine> functionOfIterVar;
 
     LoopInfo() {
         isParallelizable = false;
         num_array_accesses = 0;
-        array_accesses = new ArrayList<>();
         array_aliases_with_params = false;
         isFunctOfLoopVar = new LinkedHashSet<>();
+        refFromOut = new LinkedHashSet<>();
         array_access_with_extn_var = false;
         array_const_write_across_iters = false;
         array_access_across_iters = false;
@@ -86,6 +118,14 @@ class LoopInfo {
     }
 
     public boolean CheckFlags() {
+        // if (DEBUG) {
+        //     System.out.println("array_aliases_with_params: " + array_aliases_with_params);
+        //     System.out.println("array_access_with_extn_var: " + array_access_with_extn_var);
+        //     System.out.println("array_const_write_across_iters: " + array_const_write_across_iters);
+        //     System.out.println("array_access_across_iters: " + array_access_across_iters);
+        //     System.out.println("gcd_test_check: " + gcd_test_check);
+        //     System.out.println("num_array_accesses: " + num_array_accesses);
+        // }
         if (gcd_test_check)
             return false;
         if (array_access_across_iters)
@@ -94,89 +134,15 @@ class LoopInfo {
             return false;
         if (array_access_with_extn_var)
             return false;
-        if (array_aliases_with_params)
+        if (array_aliases_with_params && gcd_test_check)
             return false;
         if (num_array_accesses < 1)
             return true;
-        return false;
+        return true;
     }
 
     public void AccessedArray(String lhs, String rhs) {
-        List<String> access = new ArrayList<>();
-        access.add(lhs);
-        access.add(rhs);
-        array_accesses.add(access);
         num_array_accesses++;
-    }
-
-    public boolean CheckFormat(String s, Diophantine d) {
-        // we can have ( a * x ) + b or b + ( x * a ) or a * x or x * a or x or a
-        String[] tokens = s.split(" ");
-        if (tokens.length == 7) {
-            if (tokens[0].equals("(") && tokens[2].equals("*") && tokens[4].equals(")") && tokens[5].equals("+")) {
-                int b = Integer.parseInt(tokens[6]);
-                int a;
-                String x;
-                if (tokens[1].equals(loop_var)) {
-                    x = tokens[1];
-                    a = Integer.parseInt(tokens[3]);
-                } else {
-                    x = tokens[3];
-                    a = Integer.parseInt(tokens[1]);
-                }
-                d.a = a;
-                d.x = x;
-                d.b = b;
-                return true;
-            } else if (tokens[1].equals("+") && tokens[2].equals("(") && tokens[4].equals("*")
-                    && tokens[6].equals(")")) {
-                int b = Integer.parseInt(tokens[0]);
-                int a;
-                String x;
-                if (tokens[3].equals(loop_var)) {
-                    x = tokens[3];
-                    a = Integer.parseInt(tokens[5]);
-                } else {
-                    x = tokens[5];
-                    a = Integer.parseInt(tokens[3]);
-                }
-                d.a = a;
-                d.x = x;
-                d.b = b;
-                return true;
-            } else {
-                return false;
-            }
-        } else if (tokens.length == 3) {
-            if (tokens[1].equals("*")) {
-                int a;
-                String x;
-                if (tokens[0].equals(loop_var)) {
-                    x = tokens[0];
-                    a = Integer.parseInt(tokens[2]);
-                } else {
-                    x = tokens[2];
-                    a = Integer.parseInt(tokens[0]);
-                }
-                d.a = a;
-                d.x = x;
-                d.b = 0;
-                return true;
-            } else {
-                return false;
-            }
-        } else if (tokens.length == 1) {
-            if (tokens[0].equals(loop_var)) {
-                d.a = 1;
-                d.x = tokens[0];
-                d.b = 0;
-                return true;
-            } else {
-                return false;
-            }
-        } else {
-            return false;
-        }
     }
 
     public int gcd(int a, int b) {
@@ -198,26 +164,17 @@ class LoopInfo {
         }
     }
 
-    public void ComputeDiophantine(String lhs, String rhs) {
-        Diophantine Dlhs = new Diophantine();
-        Diophantine Drhs = new Diophantine();
+    public void ComputeDiophantine(Diophantine lhs, Diophantine rhs) {
         if (DEBUG) {
-            System.out.println("Converting to Diophantine Equation");
-            System.out.println("lhs: " + lhs);
-            System.out.println("rhs: " + rhs);
+            System.out.println("Diophantine Equation:");
+            lhs.Visualize();
+            rhs.Visualize();
         }
-        if (CheckFormat(lhs, Dlhs) && CheckFormat(rhs, Drhs)) {
-            if (DEBUG) {
-                System.out.println("Diophantine Equation:");
-                Dlhs.Visualize();
-                Drhs.Visualize();
-            }
-            GCDTest(Dlhs, Drhs);
-        } else {
-            if (DEBUG) {
-                System.out.println("Not convertable to a Diophantine Equation");
-            }
-        }
+        GCDTest(lhs, rhs);
+    }
+
+    public String getLinearForm(String input) {
+        return input;
     }
 
     public void CheckParallelizability() {

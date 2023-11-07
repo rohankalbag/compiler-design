@@ -56,6 +56,7 @@ public class ParallelizeVisitor<R, A> implements GJVisitor<String, A> {
    public String currClass;
    public String currMethod;
    public LoopInfo currLoop;
+   public Stack<LoopInfo> loopStack = new Stack<>();
    public boolean DEBUG = false;
 
    /**
@@ -242,10 +243,13 @@ public class ParallelizeVisitor<R, A> implements GJVisitor<String, A> {
       String _ret = null;
       MethodInfo currMethodInfo = classInfoMap.get(currClass).methods.get(currMethod);
       n.f0.accept(this, argu);
-      if (n.f0.f0.choice instanceof ArrayType)
+      if (n.f0.f0.choice instanceof ArrayType) {
          currMethodInfo.array_parameters.add(n.f1.accept(this, argu));
-      else
+         currMethodInfo.aliasWithArrayParams.add(n.f1.accept(this, argu));
+      } else {
          currMethodInfo.parameters.add(n.f1.accept(this, argu));
+         currMethodInfo.aliasWithParams.add(n.f1.accept(this, argu));
+      }
       return _ret;
    }
 
@@ -354,6 +358,12 @@ public class ParallelizeVisitor<R, A> implements GJVisitor<String, A> {
       n.f1.accept(this, argu);
       n.f2.accept(this, argu);
       if (currLoop != null && !currLoop.functionOfIterVar.containsKey(id)) {
+
+         if (currLoop.refFromOut.contains(id)) {
+            if (DEBUG)
+               System.out.println("Inter iteration access of :" + id);
+            currLoop.array_access_across_iters = true;
+         }
          if (DEBUG) {
             System.out.println("LHS id: " + id);
             System.out.println("Loop var: " + currLoop.loop_var);
@@ -367,9 +377,10 @@ public class ParallelizeVisitor<R, A> implements GJVisitor<String, A> {
                String id2 = ((Identifier) pe.f0.choice).f0.tokenImage;
                if (currLoop.functionOfIterVar.containsKey(id2)) {
                   //// currLoop.isFunctOfLoopVar.add(id);
-                  currLoop.functionOfIterVar.put(id, currLoop.functionOfIterVar.get(id2));
+                  currLoop.functionOfIterVar.put(id, new Diophantine(currLoop.functionOfIterVar.get(id2)));
                } else {
                   //// currLoop.isFunctOfLoopVar.remove(id);
+                  currLoop.refFromOut.add(id);
                   currLoop.functionOfIterVar.remove(id);
                   currLoop.array_access_across_iters = true;
                }
@@ -381,28 +392,32 @@ public class ParallelizeVisitor<R, A> implements GJVisitor<String, A> {
                String id2 = ((Identifier) pe.f2.f0.choice).f0.tokenImage;
                if (currLoop.functionOfIterVar.containsKey(id1) && currLoop.functionOfIterVar.containsKey(id2)) {
                   //// currLoop.isFunctOfLoopVar.add(id);
-                  id1 = currLoop.functionOfIterVar.get(id1);
-                  id2 = currLoop.functionOfIterVar.get(id2);
-                  currLoop.functionOfIterVar.put(id, id1 + " + " + id2);
+                  Diophantine d1 = new Diophantine(currLoop.functionOfIterVar.get(id1));
+                  Diophantine d2 = new Diophantine(currLoop.functionOfIterVar.get(id2));
+                  d1.add(d2);
+                  currLoop.functionOfIterVar.put(id, d1);
                   if (DEBUG) {
-                     System.out.println(id + " is a function of iter var: " + currLoop.functionOfIterVar.get(id));
+                     System.out.println(id + " is a function of iter var: ");
+                     currLoop.functionOfIterVar.get(id).Visualize();
                   }
                } else if (currLoop.functionOfIterVar.containsKey(id1)) {
                   //// currLoop.isFunctOfLoopVar.add(id);
-                  id1 = currLoop.functionOfIterVar.get(id1);
-                  currLoop.functionOfIterVar.put(id, id1 + " + " + id2);
+                  // Diophantine d1 = new Diophantine(currLoop.functionOfIterVar.get(id1));
+                  // currLoop.functionOfIterVar.put(id, id1 + " + " + id2);
                   currLoop.array_access_across_iters = true;
                   if (DEBUG) {
-                     System.out.println(id + " is a function of iter var: " + currLoop.functionOfIterVar.get(id));
+                     System.out.println(id + " is a function of iter var: ");
+                     // currLoop.functionOfIterVar.get(id).Visualize();
                      System.out.println("But array access across iterations: " + id2);
                   }
                } else if (currLoop.functionOfIterVar.containsKey(id2)) {
                   //// currLoop.isFunctOfLoopVar.add(id);
-                  id2 = currLoop.functionOfIterVar.get(id2);
-                  currLoop.functionOfIterVar.put(id, id1 + " + " + id2);
+                  // Diophantine d1 = new Diophantine(currLoop.functionOfIterVar.get(id2));
+                  // currLoop.functionOfIterVar.put(id, id1 + " + " + id2);
                   currLoop.array_access_across_iters = true;
                   if (DEBUG) {
-                     System.out.println(id + " is a function of iter var: " + currLoop.functionOfIterVar.get(id));
+                     System.out.println(id + " is a function of iter var: ");
+                     // currLoop.functionOfIterVar.get(id).Visualize();
                      System.out.println("But array access across iterations: " + id1);
                   }
                } else {
@@ -410,7 +425,7 @@ public class ParallelizeVisitor<R, A> implements GJVisitor<String, A> {
                   //// currLoop.isFunctOfLoopVar.remove(id);
                   currLoop.functionOfIterVar.remove(id);
                   if (DEBUG) {
-                     System.out.println(id + " is not a function of iter var: " + currLoop.functionOfIterVar.get(id));
+                     System.out.println(id + " is not a function of iter var: ");
                      System.out.println("And array access across iterations: " + id1);
                   }
                }
@@ -418,17 +433,22 @@ public class ParallelizeVisitor<R, A> implements GJVisitor<String, A> {
                String id1 = ((Identifier) pe.f0.f0.choice).f0.tokenImage;
                String id2 = ((IntegerLiteral) pe.f2.f0.choice).f0.tokenImage;
                if (currLoop.functionOfIterVar.containsKey(id1)) {
-                  id1 = currLoop.functionOfIterVar.get(id1);
-                  currLoop.functionOfIterVar.put(id, id1 + " + " + id2);
+                  Diophantine d1 = new Diophantine(currLoop.functionOfIterVar.get(id1));
+                  Diophantine d2 = new Diophantine();
+                  d2.b = Integer.parseInt(id2);
+                  d1.add(d2);
+                  currLoop.functionOfIterVar.put(id, d1);
                   if (DEBUG) {
-                     System.out.println(id + " is a function of iter var: " + currLoop.functionOfIterVar.get(id));
+                     System.out.println(id + " is a function of iter var: ");
+                     currLoop.functionOfIterVar.get(id).Visualize();
+
                   }
                } else {
                   currLoop.array_access_across_iters = true;
                   //// currLoop.isFunctOfLoopVar.remove(id);
                   currLoop.functionOfIterVar.remove(id);
                   if (DEBUG) {
-                     System.out.println(id + " is not a function of iter var: " + currLoop.functionOfIterVar.get(id));
+                     System.out.println(id + " is not a function of iter var: ");
                      System.out.println("And array access across iterations: " + id1);
                   }
                }
@@ -436,17 +456,22 @@ public class ParallelizeVisitor<R, A> implements GJVisitor<String, A> {
                String id2 = ((IntegerLiteral) pe.f0.f0.choice).f0.tokenImage;
                String id1 = ((Identifier) pe.f2.f0.choice).f0.tokenImage;
                if (currLoop.functionOfIterVar.containsKey(id1)) {
-                  id1 = currLoop.functionOfIterVar.get(id1);
-                  currLoop.functionOfIterVar.put(id, id1 + " + " + id2);
+                  Diophantine d1 = new Diophantine(currLoop.functionOfIterVar.get(id1));
+                  Diophantine d2 = new Diophantine();
+                  d2.b = Integer.parseInt(id2);
+                  d1.add(d2);
+                  currLoop.functionOfIterVar.put(id, d1);
                   if (DEBUG) {
-                     System.out.println(id + " is a function of iter var: " + currLoop.functionOfIterVar.get(id));
+                     System.out.println(id + " is a function of iter var: ");
+                     currLoop.functionOfIterVar.get(id).Visualize();
+
                   }
                } else {
                   currLoop.array_access_across_iters = true;
                   //// currLoop.isFunctOfLoopVar.remove(id);
                   currLoop.functionOfIterVar.remove(id);
                   if (DEBUG) {
-                     System.out.println(id + " is not a function of iter var: " + currLoop.functionOfIterVar.get(id));
+                     System.out.println(id + " is not a function of iter var: ");
                      System.out.println("And array access across iterations: " + id1);
                   }
                }
@@ -458,28 +483,32 @@ public class ParallelizeVisitor<R, A> implements GJVisitor<String, A> {
                String id2 = ((Identifier) pe.f2.f0.choice).f0.tokenImage;
                if (currLoop.functionOfIterVar.containsKey(id1) && currLoop.functionOfIterVar.containsKey(id2)) {
                   //// currLoop.isFunctOfLoopVar.add(id);
-                  id1 = currLoop.functionOfIterVar.get(id1);
-                  id2 = currLoop.functionOfIterVar.get(id2);
-                  currLoop.functionOfIterVar.put(id, id1 + " - " + id2);
+                  Diophantine d1 = new Diophantine(currLoop.functionOfIterVar.get(id1));
+                  Diophantine d2 = new Diophantine(currLoop.functionOfIterVar.get(id2));
+                  d1.sub(d2);
+                  currLoop.functionOfIterVar.put(id, d1);
                   if (DEBUG) {
-                     System.out.println(id + " is a function of iter var: " + currLoop.functionOfIterVar.get(id));
+                     System.out.println(id + " is a function of iter var: ");
+                     currLoop.functionOfIterVar.get(id).Visualize();
                   }
                } else if (currLoop.functionOfIterVar.containsKey(id1)) {
                   //// currLoop.isFunctOfLoopVar.add(id);
-                  id1 = currLoop.functionOfIterVar.get(id1);
-                  currLoop.functionOfIterVar.put(id, id1 + " - " + id2);
+                  // Diophantine d1 = new Diophantine(currLoop.functionOfIterVar.get(id1));
+                  // currLoop.functionOfIterVar.put(id, id1 + " + " + id2);
                   currLoop.array_access_across_iters = true;
                   if (DEBUG) {
-                     System.out.println(id + " is a function of iter var: " + currLoop.functionOfIterVar.get(id));
+                     System.out.println(id + " is a function of iter var: ");
+                     // currLoop.functionOfIterVar.get(id).Visualize();
                      System.out.println("But array access across iterations: " + id2);
                   }
                } else if (currLoop.functionOfIterVar.containsKey(id2)) {
                   //// currLoop.isFunctOfLoopVar.add(id);
-                  id2 = currLoop.functionOfIterVar.get(id2);
-                  currLoop.functionOfIterVar.put(id, id1 + " - " + id2);
+                  // Diophantine d1 = new Diophantine(currLoop.functionOfIterVar.get(id2));
+                  // currLoop.functionOfIterVar.put(id, id1 + " + " + id2);
                   currLoop.array_access_across_iters = true;
                   if (DEBUG) {
-                     System.out.println(id + " is a function of iter var: " + currLoop.functionOfIterVar.get(id));
+                     System.out.println(id + " is a function of iter var: ");
+                     // currLoop.functionOfIterVar.get(id).Visualize();
                      System.out.println("But array access across iterations: " + id1);
                   }
                } else {
@@ -487,7 +516,7 @@ public class ParallelizeVisitor<R, A> implements GJVisitor<String, A> {
                   //// currLoop.isFunctOfLoopVar.remove(id);
                   currLoop.functionOfIterVar.remove(id);
                   if (DEBUG) {
-                     System.out.println(id + " is not a function of iter var: " + currLoop.functionOfIterVar.get(id));
+                     System.out.println(id + " is not a function of iter var: ");
                      System.out.println("And array access across iterations: " + id1);
                   }
                }
@@ -495,17 +524,22 @@ public class ParallelizeVisitor<R, A> implements GJVisitor<String, A> {
                String id1 = ((Identifier) pe.f0.f0.choice).f0.tokenImage;
                String id2 = ((IntegerLiteral) pe.f2.f0.choice).f0.tokenImage;
                if (currLoop.functionOfIterVar.containsKey(id1)) {
-                  id1 = currLoop.functionOfIterVar.get(id1);
-                  currLoop.functionOfIterVar.put(id, id1 + " - " + id2);
+                  Diophantine d1 = new Diophantine(currLoop.functionOfIterVar.get(id1));
+                  Diophantine d2 = new Diophantine();
+                  d2.b = Integer.parseInt(id2);
+                  d1.sub(d2);
+                  currLoop.functionOfIterVar.put(id, d1);
                   if (DEBUG) {
-                     System.out.println(id + " is a function of iter var: " + currLoop.functionOfIterVar.get(id));
+                     System.out.println(id + " is a function of iter var: ");
+                     currLoop.functionOfIterVar.get(id).Visualize();
+
                   }
                } else {
                   currLoop.array_access_across_iters = true;
                   //// currLoop.isFunctOfLoopVar.remove(id);
                   currLoop.functionOfIterVar.remove(id);
                   if (DEBUG) {
-                     System.out.println(id + " is not a function of iter var: " + currLoop.functionOfIterVar.get(id));
+                     System.out.println(id + " is not a function of iter var: ");
                      System.out.println("And array access across iterations: " + id1);
                   }
                }
@@ -513,17 +547,22 @@ public class ParallelizeVisitor<R, A> implements GJVisitor<String, A> {
                String id2 = ((IntegerLiteral) pe.f0.f0.choice).f0.tokenImage;
                String id1 = ((Identifier) pe.f2.f0.choice).f0.tokenImage;
                if (currLoop.functionOfIterVar.containsKey(id1)) {
-                  id1 = currLoop.functionOfIterVar.get(id1);
-                  currLoop.functionOfIterVar.put(id, id1 + " - " + id2);
+                  Diophantine d1 = new Diophantine(currLoop.functionOfIterVar.get(id1));
+                  Diophantine d2 = new Diophantine();
+                  d2.b = Integer.parseInt(id2);
+                  d1.sub(d2);
+                  currLoop.functionOfIterVar.put(id, d1);
                   if (DEBUG) {
-                     System.out.println(id + " is a function of iter var: " + currLoop.functionOfIterVar.get(id));
+                     System.out.println(id + " is a function of iter var: ");
+                     currLoop.functionOfIterVar.get(id).Visualize();
+
                   }
                } else {
                   currLoop.array_access_across_iters = true;
                   //// currLoop.isFunctOfLoopVar.remove(id);
                   currLoop.functionOfIterVar.remove(id);
                   if (DEBUG) {
-                     System.out.println(id + " is not a function of iter var: " + currLoop.functionOfIterVar.get(id));
+                     System.out.println(id + " is not a function of iter var: ");
                      System.out.println("And array access across iterations: " + id1);
                   }
                }
@@ -535,28 +574,32 @@ public class ParallelizeVisitor<R, A> implements GJVisitor<String, A> {
                String id2 = ((Identifier) pe.f2.f0.choice).f0.tokenImage;
                if (currLoop.functionOfIterVar.containsKey(id1) && currLoop.functionOfIterVar.containsKey(id2)) {
                   //// currLoop.isFunctOfLoopVar.add(id);
-                  id1 = currLoop.functionOfIterVar.get(id1);
-                  id2 = currLoop.functionOfIterVar.get(id2);
-                  currLoop.functionOfIterVar.put(id, id1 + " * " + id2);
+                  Diophantine d1 = new Diophantine(currLoop.functionOfIterVar.get(id1));
+                  Diophantine d2 = new Diophantine(currLoop.functionOfIterVar.get(id2));
+                  d1.mul(d2);
+                  currLoop.functionOfIterVar.put(id, d1);
                   if (DEBUG) {
-                     System.out.println(id + " is a function of iter var: " + currLoop.functionOfIterVar.get(id));
+                     System.out.println(id + " is a function of iter var: ");
+                     currLoop.functionOfIterVar.get(id).Visualize();
                   }
                } else if (currLoop.functionOfIterVar.containsKey(id1)) {
                   //// currLoop.isFunctOfLoopVar.add(id);
-                  id1 = currLoop.functionOfIterVar.get(id1);
-                  currLoop.functionOfIterVar.put(id, id1 + " * " + id2);
+                  // Diophantine d1 = new Diophantine(currLoop.functionOfIterVar.get(id1));
+                  // currLoop.functionOfIterVar.put(id, id1 + " + " + id2);
                   currLoop.array_access_across_iters = true;
                   if (DEBUG) {
-                     System.out.println(id + " is a function of iter var: " + currLoop.functionOfIterVar.get(id));
+                     System.out.println(id + " is a function of iter var: ");
+                     // currLoop.functionOfIterVar.get(id).Visualize();
                      System.out.println("But array access across iterations: " + id2);
                   }
                } else if (currLoop.functionOfIterVar.containsKey(id2)) {
                   //// currLoop.isFunctOfLoopVar.add(id);
-                  id2 = currLoop.functionOfIterVar.get(id2);
-                  currLoop.functionOfIterVar.put(id, id1 + " * " + id2);
+                  // Diophantine d1 = new Diophantine(currLoop.functionOfIterVar.get(id2));
+                  // currLoop.functionOfIterVar.put(id, id1 + " + " + id2);
                   currLoop.array_access_across_iters = true;
                   if (DEBUG) {
-                     System.out.println(id + " is a function of iter var: " + currLoop.functionOfIterVar.get(id));
+                     System.out.println(id + " is a function of iter var: ");
+                     // currLoop.functionOfIterVar.get(id).Visualize();
                      System.out.println("But array access across iterations: " + id1);
                   }
                } else {
@@ -564,7 +607,7 @@ public class ParallelizeVisitor<R, A> implements GJVisitor<String, A> {
                   //// currLoop.isFunctOfLoopVar.remove(id);
                   currLoop.functionOfIterVar.remove(id);
                   if (DEBUG) {
-                     System.out.println(id + " is not a function of iter var: " + currLoop.functionOfIterVar.get(id));
+                     System.out.println(id + " is not a function of iter var: ");
                      System.out.println("And array access across iterations: " + id1);
                   }
                }
@@ -572,17 +615,22 @@ public class ParallelizeVisitor<R, A> implements GJVisitor<String, A> {
                String id1 = ((Identifier) pe.f0.f0.choice).f0.tokenImage;
                String id2 = ((IntegerLiteral) pe.f2.f0.choice).f0.tokenImage;
                if (currLoop.functionOfIterVar.containsKey(id1)) {
-                  id1 = currLoop.functionOfIterVar.get(id1);
-                  currLoop.functionOfIterVar.put(id, id1 + " * " + id2);
+                  Diophantine d1 = new Diophantine(currLoop.functionOfIterVar.get(id1));
+                  Diophantine d2 = new Diophantine();
+                  d2.b = Integer.parseInt(id2);
+                  d1.mul(d2);
+                  currLoop.functionOfIterVar.put(id, d1);
                   if (DEBUG) {
-                     System.out.println(id + " is a function of iter var: " + currLoop.functionOfIterVar.get(id));
+                     System.out.println(id + " is a function of iter var: ");
+                     currLoop.functionOfIterVar.get(id).Visualize();
+
                   }
                } else {
                   currLoop.array_access_across_iters = true;
                   //// currLoop.isFunctOfLoopVar.remove(id);
                   currLoop.functionOfIterVar.remove(id);
                   if (DEBUG) {
-                     System.out.println(id + " is not a function of iter var: " + currLoop.functionOfIterVar.get(id));
+                     System.out.println(id + " is not a function of iter var: ");
                      System.out.println("And array access across iterations: " + id1);
                   }
                }
@@ -590,17 +638,22 @@ public class ParallelizeVisitor<R, A> implements GJVisitor<String, A> {
                String id2 = ((IntegerLiteral) pe.f0.f0.choice).f0.tokenImage;
                String id1 = ((Identifier) pe.f2.f0.choice).f0.tokenImage;
                if (currLoop.functionOfIterVar.containsKey(id1)) {
-                  id1 = currLoop.functionOfIterVar.get(id1);
-                  currLoop.functionOfIterVar.put(id, id1 + " * " + id2);
+                  Diophantine d1 = new Diophantine(currLoop.functionOfIterVar.get(id1));
+                  Diophantine d2 = new Diophantine();
+                  d2.b = Integer.parseInt(id2);
+                  d1.mul(d2);
+                  currLoop.functionOfIterVar.put(id, d1);
                   if (DEBUG) {
-                     System.out.println(id + " is a function of iter var: " + currLoop.functionOfIterVar.get(id));
+                     System.out.println(id + " is a function of iter var: ");
+                     currLoop.functionOfIterVar.get(id).Visualize();
+
                   }
                } else {
                   currLoop.array_access_across_iters = true;
                   //// currLoop.isFunctOfLoopVar.remove(id);
                   currLoop.functionOfIterVar.remove(id);
                   if (DEBUG) {
-                     System.out.println(id + " is not a function of iter var: " + currLoop.functionOfIterVar.get(id));
+                     System.out.println(id + " is not a function of iter var: ");
                      System.out.println("And array access across iterations: " + id1);
                   }
                }
@@ -612,28 +665,32 @@ public class ParallelizeVisitor<R, A> implements GJVisitor<String, A> {
                String id2 = ((Identifier) pe.f2.f0.choice).f0.tokenImage;
                if (currLoop.functionOfIterVar.containsKey(id1) && currLoop.functionOfIterVar.containsKey(id2)) {
                   //// currLoop.isFunctOfLoopVar.add(id);
-                  id1 = currLoop.functionOfIterVar.get(id1);
-                  id2 = currLoop.functionOfIterVar.get(id2);
-                  currLoop.functionOfIterVar.put(id, id1 + " / " + id2);
+                  Diophantine d1 = new Diophantine(currLoop.functionOfIterVar.get(id1));
+                  Diophantine d2 = new Diophantine(currLoop.functionOfIterVar.get(id2));
+                  d1.div(d2);
+                  currLoop.functionOfIterVar.put(id, d1);
                   if (DEBUG) {
-                     System.out.println(id + " is a function of iter var: " + currLoop.functionOfIterVar.get(id));
+                     System.out.println(id + " is a function of iter var: ");
+                     currLoop.functionOfIterVar.get(id).Visualize();
                   }
                } else if (currLoop.functionOfIterVar.containsKey(id1)) {
                   //// currLoop.isFunctOfLoopVar.add(id);
-                  id1 = currLoop.functionOfIterVar.get(id1);
-                  currLoop.functionOfIterVar.put(id, id1 + " / " + id2);
+                  // Diophantine d1 = new Diophantine(currLoop.functionOfIterVar.get(id1));
+                  // currLoop.functionOfIterVar.put(id, id1 + " + " + id2);
                   currLoop.array_access_across_iters = true;
                   if (DEBUG) {
-                     System.out.println(id + " is a function of iter var: " + currLoop.functionOfIterVar.get(id));
+                     System.out.println(id + " is a function of iter var: ");
+                     // currLoop.functionOfIterVar.get(id).Visualize();
                      System.out.println("But array access across iterations: " + id2);
                   }
                } else if (currLoop.functionOfIterVar.containsKey(id2)) {
                   //// currLoop.isFunctOfLoopVar.add(id);
-                  id2 = currLoop.functionOfIterVar.get(id2);
-                  currLoop.functionOfIterVar.put(id, id1 + " / " + id2);
+                  // Diophantine d1 = new Diophantine(currLoop.functionOfIterVar.get(id2));
+                  // currLoop.functionOfIterVar.put(id, id1 + " + " + id2);
                   currLoop.array_access_across_iters = true;
                   if (DEBUG) {
-                     System.out.println(id + " is a function of iter var: " + currLoop.functionOfIterVar.get(id));
+                     System.out.println(id + " is a function of iter var: ");
+                     // currLoop.functionOfIterVar.get(id).Visualize();
                      System.out.println("But array access across iterations: " + id1);
                   }
                } else {
@@ -641,7 +698,7 @@ public class ParallelizeVisitor<R, A> implements GJVisitor<String, A> {
                   //// currLoop.isFunctOfLoopVar.remove(id);
                   currLoop.functionOfIterVar.remove(id);
                   if (DEBUG) {
-                     System.out.println(id + " is not a function of iter var: " + currLoop.functionOfIterVar.get(id));
+                     System.out.println(id + " is not a function of iter var: ");
                      System.out.println("And array access across iterations: " + id1);
                   }
                }
@@ -649,17 +706,22 @@ public class ParallelizeVisitor<R, A> implements GJVisitor<String, A> {
                String id1 = ((Identifier) pe.f0.f0.choice).f0.tokenImage;
                String id2 = ((IntegerLiteral) pe.f2.f0.choice).f0.tokenImage;
                if (currLoop.functionOfIterVar.containsKey(id1)) {
-                  id1 = currLoop.functionOfIterVar.get(id1);
-                  currLoop.functionOfIterVar.put(id, id1 + " / " + id2);
+                  Diophantine d1 = new Diophantine(currLoop.functionOfIterVar.get(id1));
+                  Diophantine d2 = new Diophantine();
+                  d2.b = Integer.parseInt(id2);
+                  d1.div(d2);
+                  currLoop.functionOfIterVar.put(id, d1);
                   if (DEBUG) {
-                     System.out.println(id + " is a function of iter var: " + currLoop.functionOfIterVar.get(id));
+                     System.out.println(id + " is a function of iter var: ");
+                     currLoop.functionOfIterVar.get(id).Visualize();
+
                   }
                } else {
                   currLoop.array_access_across_iters = true;
                   //// currLoop.isFunctOfLoopVar.remove(id);
                   currLoop.functionOfIterVar.remove(id);
                   if (DEBUG) {
-                     System.out.println(id + " is not a function of iter var: " + currLoop.functionOfIterVar.get(id));
+                     System.out.println(id + " is not a function of iter var: ");
                      System.out.println("And array access across iterations: " + id1);
                   }
                }
@@ -667,17 +729,22 @@ public class ParallelizeVisitor<R, A> implements GJVisitor<String, A> {
                String id2 = ((IntegerLiteral) pe.f0.f0.choice).f0.tokenImage;
                String id1 = ((Identifier) pe.f2.f0.choice).f0.tokenImage;
                if (currLoop.functionOfIterVar.containsKey(id1)) {
-                  id1 = currLoop.functionOfIterVar.get(id1);
-                  currLoop.functionOfIterVar.put(id, id1 + " / " + id2);
+                  Diophantine d1 = new Diophantine(currLoop.functionOfIterVar.get(id1));
+                  Diophantine d2 = new Diophantine();
+                  d2.b = Integer.parseInt(id2);
+                  d1.div(d2);
+                  currLoop.functionOfIterVar.put(id, d1);
                   if (DEBUG) {
-                     System.out.println(id + " is a function of iter var: " + currLoop.functionOfIterVar.get(id));
+                     System.out.println(id + " is a function of iter var: ");
+                     currLoop.functionOfIterVar.get(id).Visualize();
+
                   }
                } else {
                   currLoop.array_access_across_iters = true;
                   //// currLoop.isFunctOfLoopVar.remove(id);
                   currLoop.functionOfIterVar.remove(id);
                   if (DEBUG) {
-                     System.out.println(id + " is not a function of iter var: " + currLoop.functionOfIterVar.get(id));
+                     System.out.println(id + " is not a function of iter var: ");
                      System.out.println("And array access across iterations: " + id1);
                   }
                }
@@ -700,10 +767,13 @@ public class ParallelizeVisitor<R, A> implements GJVisitor<String, A> {
                String id2 = ((Identifier) pe.f0.choice).f0.tokenImage;
                if (currLoop.loop_var.equals(id2)) {
                   //// currLoop.isFunctOfLoopVar.add(id);
-                  currLoop.functionOfIterVar.put(id, id2);
+                  Diophantine lv = new Diophantine();
+                  lv.x = id2;
+                  lv.a = 1;
+                  currLoop.functionOfIterVar.put(id, lv);
                } else if (currLoop.functionOfIterVar.containsKey(id2)) {
                   //// currLoop.isFunctOfLoopVar.add(id);
-                  currLoop.functionOfIterVar.put(id, currLoop.functionOfIterVar.get(id2));
+                  currLoop.functionOfIterVar.put(id, new Diophantine(currLoop.functionOfIterVar.get(id2)));
                } else {
                   //// currLoop.isFunctOfLoopVar.remove(id);
                   currLoop.functionOfIterVar.remove(id);
@@ -715,40 +785,65 @@ public class ParallelizeVisitor<R, A> implements GJVisitor<String, A> {
                String id1 = ((Identifier) pe.f0.f0.choice).f0.tokenImage;
                String id2 = ((Identifier) pe.f2.f0.choice).f0.tokenImage;
 
+               Diophantine d1 = new Diophantine();
+               Diophantine d2 = new Diophantine();
+               d1.x = id1;
+               d1.a = 1;
+               d2.x = id2;
+               d2.a = 1;
                if (currLoop.functionOfIterVar.containsKey(id1)) {
-                  id1 = "( " + currLoop.functionOfIterVar.get(id1) + " )";
+                  d1 = new Diophantine(currLoop.functionOfIterVar.get(id1));
                }
 
                if (currLoop.functionOfIterVar.containsKey(id2)) {
-                  id2 = "( " + currLoop.functionOfIterVar.get(id2) + " )";
+                  d2 = new Diophantine(currLoop.functionOfIterVar.get(id2));
                }
-               currLoop.functionOfIterVar.put(id, id1 + " + " + id2);
+               d1.add(d2);
+               currLoop.functionOfIterVar.put(id, d1);
                if (DEBUG) {
-                  System.out.println(id + " is a function of iter var: " + currLoop.functionOfIterVar.get(id));
+                  System.out.println(id + " is a function of iter var: ");
+                  currLoop.functionOfIterVar.get(id).Visualize();
                }
 
             } else if (pe.f0.f0.choice instanceof Identifier && pe.f2.f0.choice instanceof IntegerLiteral) {
                String id1 = ((Identifier) pe.f0.f0.choice).f0.tokenImage;
                String id2 = ((IntegerLiteral) pe.f2.f0.choice).f0.tokenImage;
 
+               Diophantine d1 = new Diophantine();
+               Diophantine d2 = new Diophantine();
+               d1.x = id1;
+               d1.a = 1;
+               d2.b = Integer.parseInt(id2);
+
                if (currLoop.functionOfIterVar.containsKey(id1)) {
-                  id1 = "( " + currLoop.functionOfIterVar.get(id1) + " )";
+                  d1 = new Diophantine(currLoop.functionOfIterVar.get(id1));
                }
 
-               currLoop.functionOfIterVar.put(id, id1 + " + " + id2);
+               d1.add(d2);
+
+               currLoop.functionOfIterVar.put(id, d1);
                if (DEBUG) {
-                  System.out.println(id + " is a function of iter var: " + currLoop.functionOfIterVar.get(id));
+                  System.out.println(id + " is a function of iter var: ");
+                  currLoop.functionOfIterVar.get(id).Visualize();
                }
             } else if (pe.f0.f0.choice instanceof IntegerLiteral && pe.f2.f0.choice instanceof Identifier) {
                String id1 = ((IntegerLiteral) pe.f0.f0.choice).f0.tokenImage;
                String id2 = ((Identifier) pe.f2.f0.choice).f0.tokenImage;
+               Diophantine d1 = new Diophantine();
+               Diophantine d2 = new Diophantine();
+               d1.b = Integer.parseInt(id1);
+               d2.x = id2;
+               d2.a = 1;
                if (currLoop.functionOfIterVar.containsKey(id2)) {
-                  id1 = "( " + currLoop.functionOfIterVar.get(id2) + " )";
+                  d2 = new Diophantine(currLoop.functionOfIterVar.get(id2));
                }
 
-               currLoop.functionOfIterVar.put(id, id1 + " + " + id2);
+               d2.add(d1);
+
+               currLoop.functionOfIterVar.put(id, d2);
                if (DEBUG) {
-                  System.out.println(id + " is a function of iter var: " + currLoop.functionOfIterVar.get(id));
+                  System.out.println(id + " is a function of iter var: ");
+                  currLoop.functionOfIterVar.get(id).Visualize();
                }
             }
          } else if (n.f2.f0.choice instanceof MinusExpression) {
@@ -757,40 +852,65 @@ public class ParallelizeVisitor<R, A> implements GJVisitor<String, A> {
                String id1 = ((Identifier) pe.f0.f0.choice).f0.tokenImage;
                String id2 = ((Identifier) pe.f2.f0.choice).f0.tokenImage;
 
+               Diophantine d1 = new Diophantine();
+               Diophantine d2 = new Diophantine();
+               d1.x = id1;
+               d1.a = 1;
+               d2.x = id2;
+               d2.a = 1;
                if (currLoop.functionOfIterVar.containsKey(id1)) {
-                  id1 = "( " + currLoop.functionOfIterVar.get(id1) + " )";
+                  d1 = new Diophantine(currLoop.functionOfIterVar.get(id1));
                }
 
                if (currLoop.functionOfIterVar.containsKey(id2)) {
-                  id2 = "( " + currLoop.functionOfIterVar.get(id2) + " )";
+                  d2 = new Diophantine(currLoop.functionOfIterVar.get(id2));
                }
-               currLoop.functionOfIterVar.put(id, id1 + " - " + id2);
+               d1.sub(d2);
+               currLoop.functionOfIterVar.put(id, d1);
                if (DEBUG) {
-                  System.out.println(id + " is a function of iter var: " + currLoop.functionOfIterVar.get(id));
+                  System.out.println(id + " is a function of iter var: ");
+                  currLoop.functionOfIterVar.get(id).Visualize();
                }
 
             } else if (pe.f0.f0.choice instanceof Identifier && pe.f2.f0.choice instanceof IntegerLiteral) {
                String id1 = ((Identifier) pe.f0.f0.choice).f0.tokenImage;
                String id2 = ((IntegerLiteral) pe.f2.f0.choice).f0.tokenImage;
 
+               Diophantine d1 = new Diophantine();
+               Diophantine d2 = new Diophantine();
+               d1.x = id1;
+               d1.a = 1;
+               d2.b = Integer.parseInt(id2);
+
                if (currLoop.functionOfIterVar.containsKey(id1)) {
-                  id1 = "( " + currLoop.functionOfIterVar.get(id1) + " )";
+                  d1 = new Diophantine(currLoop.functionOfIterVar.get(id1));
                }
 
-               currLoop.functionOfIterVar.put(id, id1 + " - " + id2);
+               d1.sub(d2);
+
+               currLoop.functionOfIterVar.put(id, d1);
                if (DEBUG) {
-                  System.out.println(id + " is a function of iter var: " + currLoop.functionOfIterVar.get(id));
+                  System.out.println(id + " is a function of iter var: ");
+                  currLoop.functionOfIterVar.get(id).Visualize();
                }
             } else if (pe.f0.f0.choice instanceof IntegerLiteral && pe.f2.f0.choice instanceof Identifier) {
                String id1 = ((IntegerLiteral) pe.f0.f0.choice).f0.tokenImage;
                String id2 = ((Identifier) pe.f2.f0.choice).f0.tokenImage;
+               Diophantine d1 = new Diophantine();
+               Diophantine d2 = new Diophantine();
+               d1.b = Integer.parseInt(id1);
+               d2.x = id2;
+               d2.a = 1;
                if (currLoop.functionOfIterVar.containsKey(id2)) {
-                  id1 = "( " + currLoop.functionOfIterVar.get(id2) + " )";
+                  d2 = new Diophantine(currLoop.functionOfIterVar.get(id2));
                }
 
-               currLoop.functionOfIterVar.put(id, id1 + " - " + id2);
+               d2.sub(d1);
+
+               currLoop.functionOfIterVar.put(id, d2);
                if (DEBUG) {
-                  System.out.println(id + " is a function of iter var: " + currLoop.functionOfIterVar.get(id));
+                  System.out.println(id + " is a function of iter var: ");
+                  currLoop.functionOfIterVar.get(id).Visualize();
                }
             }
          } else if (n.f2.f0.choice instanceof TimesExpression) {
@@ -799,40 +919,65 @@ public class ParallelizeVisitor<R, A> implements GJVisitor<String, A> {
                String id1 = ((Identifier) pe.f0.f0.choice).f0.tokenImage;
                String id2 = ((Identifier) pe.f2.f0.choice).f0.tokenImage;
 
+               Diophantine d1 = new Diophantine();
+               Diophantine d2 = new Diophantine();
+               d1.x = id1;
+               d1.a = 1;
+               d2.x = id2;
+               d2.a = 1;
                if (currLoop.functionOfIterVar.containsKey(id1)) {
-                  id1 = "( " + currLoop.functionOfIterVar.get(id1) + " )";
+                  d1 = new Diophantine(currLoop.functionOfIterVar.get(id1));
                }
 
                if (currLoop.functionOfIterVar.containsKey(id2)) {
-                  id2 = "( " + currLoop.functionOfIterVar.get(id2) + " )";
+                  d2 = new Diophantine(currLoop.functionOfIterVar.get(id2));
                }
-               currLoop.functionOfIterVar.put(id, id1 + " * " + id2);
+               d1.mul(d2);
+               currLoop.functionOfIterVar.put(id, d1);
                if (DEBUG) {
-                  System.out.println(id + " is a function of iter var: " + currLoop.functionOfIterVar.get(id));
+                  System.out.println(id + " is a function of iter var: ");
+                  currLoop.functionOfIterVar.get(id).Visualize();
                }
 
             } else if (pe.f0.f0.choice instanceof Identifier && pe.f2.f0.choice instanceof IntegerLiteral) {
                String id1 = ((Identifier) pe.f0.f0.choice).f0.tokenImage;
                String id2 = ((IntegerLiteral) pe.f2.f0.choice).f0.tokenImage;
 
+               Diophantine d1 = new Diophantine();
+               Diophantine d2 = new Diophantine();
+               d1.x = id1;
+               d1.a = 1;
+               d2.b = Integer.parseInt(id2);
+
                if (currLoop.functionOfIterVar.containsKey(id1)) {
-                  id1 = "( " + currLoop.functionOfIterVar.get(id1) + " )";
+                  d1 = new Diophantine(currLoop.functionOfIterVar.get(id1));
                }
 
-               currLoop.functionOfIterVar.put(id, id1 + " * " + id2);
+               d1.mul(d2);
+
+               currLoop.functionOfIterVar.put(id, d1);
                if (DEBUG) {
-                  System.out.println(id + " is a function of iter var: " + currLoop.functionOfIterVar.get(id));
+                  System.out.println(id + " is a function of iter var: ");
+                  currLoop.functionOfIterVar.get(id).Visualize();
                }
             } else if (pe.f0.f0.choice instanceof IntegerLiteral && pe.f2.f0.choice instanceof Identifier) {
                String id1 = ((IntegerLiteral) pe.f0.f0.choice).f0.tokenImage;
                String id2 = ((Identifier) pe.f2.f0.choice).f0.tokenImage;
+               Diophantine d1 = new Diophantine();
+               Diophantine d2 = new Diophantine();
+               d1.b = Integer.parseInt(id1);
+               d2.x = id2;
+               d2.a = 1;
                if (currLoop.functionOfIterVar.containsKey(id2)) {
-                  id1 = "( " + currLoop.functionOfIterVar.get(id2) + " )";
+                  d2 = new Diophantine(currLoop.functionOfIterVar.get(id2));
                }
 
-               currLoop.functionOfIterVar.put(id, id1 + " * " + id2);
+               d2.mul(d1);
+
+               currLoop.functionOfIterVar.put(id, d2);
                if (DEBUG) {
-                  System.out.println(id + " is a function of iter var: " + currLoop.functionOfIterVar.get(id));
+                  System.out.println(id + " is a function of iter var: ");
+                  currLoop.functionOfIterVar.get(id).Visualize();
                }
             }
          } else if (n.f2.f0.choice instanceof DivExpression) {
@@ -841,40 +986,65 @@ public class ParallelizeVisitor<R, A> implements GJVisitor<String, A> {
                String id1 = ((Identifier) pe.f0.f0.choice).f0.tokenImage;
                String id2 = ((Identifier) pe.f2.f0.choice).f0.tokenImage;
 
+               Diophantine d1 = new Diophantine();
+               Diophantine d2 = new Diophantine();
+               d1.x = id1;
+               d1.a = 1;
+               d2.x = id2;
+               d2.a = 1;
                if (currLoop.functionOfIterVar.containsKey(id1)) {
-                  id1 = "( " + currLoop.functionOfIterVar.get(id1) + " )";
+                  d1 = new Diophantine(currLoop.functionOfIterVar.get(id1));
                }
 
                if (currLoop.functionOfIterVar.containsKey(id2)) {
-                  id2 = "( " + currLoop.functionOfIterVar.get(id2) + " )";
+                  d2 = new Diophantine(currLoop.functionOfIterVar.get(id2));
                }
-               currLoop.functionOfIterVar.put(id, id1 + " / " + id2);
+               d1.div(d2);
+               currLoop.functionOfIterVar.put(id, d1);
                if (DEBUG) {
-                  System.out.println(id + " is a function of iter var: " + currLoop.functionOfIterVar.get(id));
+                  System.out.println(id + " is a function of iter var: ");
+                  currLoop.functionOfIterVar.get(id).Visualize();
                }
 
             } else if (pe.f0.f0.choice instanceof Identifier && pe.f2.f0.choice instanceof IntegerLiteral) {
                String id1 = ((Identifier) pe.f0.f0.choice).f0.tokenImage;
                String id2 = ((IntegerLiteral) pe.f2.f0.choice).f0.tokenImage;
 
+               Diophantine d1 = new Diophantine();
+               Diophantine d2 = new Diophantine();
+               d1.x = id1;
+               d1.a = 1;
+               d2.b = Integer.parseInt(id2);
+
                if (currLoop.functionOfIterVar.containsKey(id1)) {
-                  id1 = "( " + currLoop.functionOfIterVar.get(id1) + " )";
+                  d1 = new Diophantine(currLoop.functionOfIterVar.get(id1));
                }
 
-               currLoop.functionOfIterVar.put(id, id1 + " / " + id2);
+               d1.div(d2);
+
+               currLoop.functionOfIterVar.put(id, d1);
                if (DEBUG) {
-                  System.out.println(id + " is a function of iter var: " + currLoop.functionOfIterVar.get(id));
+                  System.out.println(id + " is a function of iter var: ");
+                  currLoop.functionOfIterVar.get(id).Visualize();
                }
             } else if (pe.f0.f0.choice instanceof IntegerLiteral && pe.f2.f0.choice instanceof Identifier) {
                String id1 = ((IntegerLiteral) pe.f0.f0.choice).f0.tokenImage;
                String id2 = ((Identifier) pe.f2.f0.choice).f0.tokenImage;
+               Diophantine d1 = new Diophantine();
+               Diophantine d2 = new Diophantine();
+               d1.b = Integer.parseInt(id1);
+               d2.x = id2;
+               d2.a = 1;
                if (currLoop.functionOfIterVar.containsKey(id2)) {
-                  id1 = "( " + currLoop.functionOfIterVar.get(id2) + " )";
+                  d2 = new Diophantine(currLoop.functionOfIterVar.get(id2));
                }
 
-               currLoop.functionOfIterVar.put(id, id1 + " / " + id2);
+               d2.div(d1);
+
+               currLoop.functionOfIterVar.put(id, d2);
                if (DEBUG) {
-                  System.out.println(id + " is a function of iter var: " + currLoop.functionOfIterVar.get(id));
+                  System.out.println(id + " is a function of iter var: ");
+                  currLoop.functionOfIterVar.get(id).Visualize();
                }
             }
          }
@@ -1000,12 +1170,16 @@ public class ParallelizeVisitor<R, A> implements GJVisitor<String, A> {
       MethodInfo currMethodInfo = classInfoMap.get(currClass).methods.get(currMethod);
       currLoop = new LoopInfo();
       currMethodInfo.loops.add(currLoop);
+      loopStack.add(currLoop);
       n.f0.accept(this, argu);
       n.f1.accept(this, argu);
       n.f2.accept(this, argu);
       currLoop.loop_var = n.f3.accept(this, argu);
       // currLoop.isFunctOfLoopVar.add(currLoop.loop_var);
-      currLoop.functionOfIterVar.put(currLoop.loop_var, currLoop.loop_var);
+      Diophantine d1 = new Diophantine();
+      d1.a = 1;
+      d1.x = currLoop.loop_var;
+      currLoop.functionOfIterVar.put(currLoop.loop_var, d1);
       n.f4.accept(this, argu);
       n.f5.accept(this, argu);
       n.f6.accept(this, argu);
@@ -1015,7 +1189,11 @@ public class ParallelizeVisitor<R, A> implements GJVisitor<String, A> {
       n.f10.accept(this, argu);
       n.f11.accept(this, argu);
       currLoop.CheckParallelizability();
-      currLoop = null;
+      if (loopStack.size() > 0) {
+         currLoop = loopStack.pop();
+      } else {
+         currLoop = null;
+      }
       return _ret;
    }
 
@@ -1492,10 +1670,30 @@ public class ParallelizeVisitor<R, A> implements GJVisitor<String, A> {
       if (currLoop != null && n.f2.f0.choice instanceof ArrayLookup) {
          ArrayLookup rhsArrLookup = (ArrayLookup) n.f2.f0.choice;
          String rhsArrId = rhsArrLookup.f0.f0.tokenImage;
+         String lhsArrId = n.f0.f0.f0.tokenImage;
+         boolean diff_arrays = false;
+         if (currMethodInfo.aliasWithArrayParams.contains(lhsArrId)
+               || currMethodInfo.aliasWithArrayParams.contains(rhsArrId)) {
+            if (DEBUG) {
+               System.out.println("Array aliases with array parameters");
+            }
+            currLoop.array_aliases_with_params = true;
+            diff_arrays = false;
+         } else if (currMethodInfo.array_variables.get(lhsArrId).contains(rhsArrId)) {
+            currLoop.AccessedArray(lhsArrId, rhsArrId);
+            diff_arrays = false;
+         } else if (currMethodInfo.array_variables.get(rhsArrId).contains(lhsArrId)) {
+            currLoop.AccessedArray(lhsArrId, rhsArrId);
+            diff_arrays = false;
+         } else if (rhsArrId == lhsArrId) {
+            currLoop.AccessedArray(lhsArrId, rhsArrId);
+            diff_arrays = false;
+         } else {
+            diff_arrays = true;
+         }
          if (n.f0.f2.f0.choice instanceof Identifier && rhsArrLookup.f2.f0.choice instanceof Identifier) {
             String lhsIndId = ((Identifier) n.f0.f2.f0.choice).f0.tokenImage;
             String rhsIndId = ((Identifier) rhsArrLookup.f2.f0.choice).f0.tokenImage;
-            String lhsArrId = n.f0.f0.f0.tokenImage;
             if (DEBUG) {
                System.out.println("lhsId: " + lhsIndId + " : " + " rhsId: " + rhsIndId);
                System.out.println("functions of iter var: " + currLoop.functionOfIterVar.keySet());
@@ -1504,26 +1702,16 @@ public class ParallelizeVisitor<R, A> implements GJVisitor<String, A> {
             if (currLoop.functionOfIterVar.containsKey(lhsIndId) && currLoop.functionOfIterVar.containsKey(rhsIndId)) {
                if (DEBUG) {
                   System.out.println("Both arrays are functions of loop var");
+                  System.out.println("lhsId: " + lhsIndId + " : " + " rhsId: " + rhsIndId);
                }
-               currLoop.ComputeDiophantine(currLoop.functionOfIterVar.get(lhsIndId),
-                     currLoop.functionOfIterVar.get(rhsIndId));
+               if (!diff_arrays)
+                  currLoop.ComputeDiophantine(currLoop.functionOfIterVar.get(lhsIndId),
+                        currLoop.functionOfIterVar.get(rhsIndId));
             } else if (currLoop.functionOfIterVar.containsKey(lhsIndId)) {
                currLoop.array_access_with_extn_var = true;
             } else if (currLoop.functionOfIterVar.containsKey(rhsIndId)) {
             } else {
-            }
-            if (currMethodInfo.aliasWithArrayParams.contains(lhsArrId)
-                  || currMethodInfo.aliasWithArrayParams.contains(rhsArrId)) {
-               if (DEBUG) {
-                  System.out.println("Array aliases with array parameters");
-               }
-               currLoop.array_aliases_with_params = true;
-            } else if (currMethodInfo.array_variables.get(lhsArrId).contains(rhsArrId)) {
-               currLoop.AccessedArray(lhsArrId, rhsArrId);
-            } else if (currMethodInfo.array_variables.get(rhsArrId).contains(lhsArrId)) {
-               currLoop.AccessedArray(lhsArrId, rhsArrId);
-            } else if (rhsArrId == lhsArrId) {
-               currLoop.AccessedArray(lhsArrId, rhsArrId);
+               currLoop.refFromOut.add(rhsIndId);
             }
          } else if (n.f0.f2.f0.choice instanceof Identifier
                && rhsArrLookup.f2.f0.choice instanceof IntegerLiteral) {
@@ -1536,6 +1724,8 @@ public class ParallelizeVisitor<R, A> implements GJVisitor<String, A> {
             String rhsIndId = ((Identifier) rhsArrLookup.f2.f0.choice).f0.tokenImage;
             if (currLoop.functionOfIterVar.containsKey(rhsIndId)) {
                currLoop.array_const_write_across_iters = true;
+            } else {
+               currLoop.refFromOut.add(rhsIndId);
             }
          } else if (n.f0.f2.f0.choice instanceof IntegerLiteral
                && rhsArrLookup.f2.f0.choice instanceof IntegerLiteral) {
@@ -1546,9 +1736,11 @@ public class ParallelizeVisitor<R, A> implements GJVisitor<String, A> {
             String lhsIndId = ((Identifier) n.f0.f2.f0.choice).f0.tokenImage;
             if (currLoop.functionOfIterVar.containsKey(lhsIndId) && currLoop.functionOfIterVar.containsKey(rhsId)) {
             } else if (currLoop.functionOfIterVar.containsKey(lhsIndId)) {
+               currLoop.refFromOut.add(rhsId);
             } else if (currLoop.functionOfIterVar.containsKey(rhsId)) {
                currLoop.array_const_write_across_iters = true;
             } else {
+               currLoop.refFromOut.add(rhsId);
             }
          } else if (n.f0.f2.f0.choice instanceof IntegerLiteral) {
             if (currLoop.functionOfIterVar.containsKey(rhsId)) {
