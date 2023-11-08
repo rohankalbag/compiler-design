@@ -118,14 +118,23 @@ class LoopInfo {
     }
 
     public boolean CheckFlags() {
-        // if (DEBUG) {
-        //     System.out.println("array_aliases_with_params: " + array_aliases_with_params);
-        //     System.out.println("array_access_with_extn_var: " + array_access_with_extn_var);
-        //     System.out.println("array_const_write_across_iters: " + array_const_write_across_iters);
-        //     System.out.println("array_access_across_iters: " + array_access_across_iters);
-        //     System.out.println("gcd_test_check: " + gcd_test_check);
-        //     System.out.println("num_array_accesses: " + num_array_accesses);
-        // }
+        if (DEBUG) {
+            for (String d : functionOfIterVar.keySet()) {
+                System.out.println(d + " : " + functionOfIterVar.get(d).a + " " +
+                        functionOfIterVar.get(d).x + " " +
+                        functionOfIterVar.get(d).b);
+            }
+            System.out.println("array_aliases_with_params: " +
+                    array_aliases_with_params);
+            System.out.println("array_access_with_extn_var: " +
+                    array_access_with_extn_var);
+            System.out.println("array_const_write_across_iters: " +
+                    array_const_write_across_iters);
+            System.out.println("array_access_across_iters: " +
+                    array_access_across_iters);
+            System.out.println("gcd_test_check: " + gcd_test_check);
+            System.out.println("num_array_accesses: " + num_array_accesses);
+        }
         if (gcd_test_check)
             return false;
         if (array_access_across_iters)
@@ -142,6 +151,9 @@ class LoopInfo {
     }
 
     public void AccessedArray(String lhs, String rhs) {
+        if (DEBUG) {
+            System.out.println("Accessed Array: " + lhs + " " + rhs);
+        }
         num_array_accesses++;
     }
 

@@ -358,7 +358,9 @@ public class ParallelizeVisitor<R, A> implements GJVisitor<String, A> {
       n.f1.accept(this, argu);
       n.f2.accept(this, argu);
       if (currLoop != null && !currLoop.functionOfIterVar.containsKey(id)) {
-
+         if (DEBUG) {
+            System.out.println("Vars refered from outside" + currLoop.refFromOut);
+         }
          if (currLoop.refFromOut.contains(id)) {
             if (DEBUG)
                System.out.println("Inter iteration access of :" + id);
@@ -404,29 +406,33 @@ public class ParallelizeVisitor<R, A> implements GJVisitor<String, A> {
                   //// currLoop.isFunctOfLoopVar.add(id);
                   // Diophantine d1 = new Diophantine(currLoop.functionOfIterVar.get(id1));
                   // currLoop.functionOfIterVar.put(id, id1 + " + " + id2);
-                  currLoop.array_access_across_iters = true;
+                  // currLoop.array_access_across_iters = true;
+                  currLoop.refFromOut.add(id2);
                   if (DEBUG) {
                      System.out.println(id + " is a function of iter var: ");
                      // currLoop.functionOfIterVar.get(id).Visualize();
-                     System.out.println("But array access across iterations: " + id2);
+                     // System.out.println("But array access across iterations: " + id2);
                   }
                } else if (currLoop.functionOfIterVar.containsKey(id2)) {
                   //// currLoop.isFunctOfLoopVar.add(id);
                   // Diophantine d1 = new Diophantine(currLoop.functionOfIterVar.get(id2));
                   // currLoop.functionOfIterVar.put(id, id1 + " + " + id2);
-                  currLoop.array_access_across_iters = true;
+                  // currLoop.array_access_across_iters = true;
+                  currLoop.refFromOut.add(id1);
                   if (DEBUG) {
                      System.out.println(id + " is a function of iter var: ");
                      // currLoop.functionOfIterVar.get(id).Visualize();
-                     System.out.println("But array access across iterations: " + id1);
+                     // System.out.println("But array access across iterations: " + id1);
                   }
                } else {
-                  currLoop.array_access_across_iters = true;
+                  // currLoop.array_access_across_iters = true;
                   //// currLoop.isFunctOfLoopVar.remove(id);
+                  currLoop.refFromOut.add(id1);
+                  currLoop.refFromOut.add(id2);
                   currLoop.functionOfIterVar.remove(id);
                   if (DEBUG) {
                      System.out.println(id + " is not a function of iter var: ");
-                     System.out.println("And array access across iterations: " + id1);
+                     // System.out.println("And array access across iterations: " + id1);
                   }
                }
             } else if (pe.f0.f0.choice instanceof Identifier && pe.f2.f0.choice instanceof IntegerLiteral) {
@@ -444,12 +450,13 @@ public class ParallelizeVisitor<R, A> implements GJVisitor<String, A> {
 
                   }
                } else {
-                  currLoop.array_access_across_iters = true;
+                  // currLoop.array_access_across_iters = true;
                   //// currLoop.isFunctOfLoopVar.remove(id);
+                  currLoop.refFromOut.add(id1);
                   currLoop.functionOfIterVar.remove(id);
                   if (DEBUG) {
                      System.out.println(id + " is not a function of iter var: ");
-                     System.out.println("And array access across iterations: " + id1);
+                     // System.out.println("And array access across iterations: " + id1);
                   }
                }
             } else if (pe.f0.f0.choice instanceof IntegerLiteral && pe.f2.f0.choice instanceof Identifier) {
@@ -467,12 +474,13 @@ public class ParallelizeVisitor<R, A> implements GJVisitor<String, A> {
 
                   }
                } else {
-                  currLoop.array_access_across_iters = true;
+                  // currLoop.array_access_across_iters = true;
                   //// currLoop.isFunctOfLoopVar.remove(id);
+                  currLoop.refFromOut.add(id1);
                   currLoop.functionOfIterVar.remove(id);
                   if (DEBUG) {
                      System.out.println(id + " is not a function of iter var: ");
-                     System.out.println("And array access across iterations: " + id1);
+                     // System.out.println("And array access across iterations: " + id1);
                   }
                }
             }
@@ -495,29 +503,33 @@ public class ParallelizeVisitor<R, A> implements GJVisitor<String, A> {
                   //// currLoop.isFunctOfLoopVar.add(id);
                   // Diophantine d1 = new Diophantine(currLoop.functionOfIterVar.get(id1));
                   // currLoop.functionOfIterVar.put(id, id1 + " + " + id2);
-                  currLoop.array_access_across_iters = true;
+                  // currLoop.array_access_across_iters = true;
+                  currLoop.refFromOut.add(id2);
                   if (DEBUG) {
                      System.out.println(id + " is a function of iter var: ");
                      // currLoop.functionOfIterVar.get(id).Visualize();
-                     System.out.println("But array access across iterations: " + id2);
+                     // System.out.println("But array access across iterations: " + id2);
                   }
                } else if (currLoop.functionOfIterVar.containsKey(id2)) {
                   //// currLoop.isFunctOfLoopVar.add(id);
                   // Diophantine d1 = new Diophantine(currLoop.functionOfIterVar.get(id2));
                   // currLoop.functionOfIterVar.put(id, id1 + " + " + id2);
-                  currLoop.array_access_across_iters = true;
+                  // currLoop.array_access_across_iters = true;
+                  currLoop.refFromOut.add(id1);
                   if (DEBUG) {
                      System.out.println(id + " is a function of iter var: ");
                      // currLoop.functionOfIterVar.get(id).Visualize();
-                     System.out.println("But array access across iterations: " + id1);
+                     // System.out.println("But array access across iterations: " + id1);
                   }
                } else {
-                  currLoop.array_access_across_iters = true;
+                  // currLoop.array_access_across_iters = true;
                   //// currLoop.isFunctOfLoopVar.remove(id);
+                  currLoop.refFromOut.add(id1);
+                  currLoop.refFromOut.add(id2);
                   currLoop.functionOfIterVar.remove(id);
                   if (DEBUG) {
                      System.out.println(id + " is not a function of iter var: ");
-                     System.out.println("And array access across iterations: " + id1);
+                     // System.out.println("And array access across iterations: " + id1);
                   }
                }
             } else if (pe.f0.f0.choice instanceof Identifier && pe.f2.f0.choice instanceof IntegerLiteral) {
@@ -535,12 +547,13 @@ public class ParallelizeVisitor<R, A> implements GJVisitor<String, A> {
 
                   }
                } else {
-                  currLoop.array_access_across_iters = true;
+                  // currLoop.array_access_across_iters = true;
                   //// currLoop.isFunctOfLoopVar.remove(id);
+                  currLoop.refFromOut.add(id1);
                   currLoop.functionOfIterVar.remove(id);
                   if (DEBUG) {
                      System.out.println(id + " is not a function of iter var: ");
-                     System.out.println("And array access across iterations: " + id1);
+                     // System.out.println("And array access across iterations: " + id1);
                   }
                }
             } else if (pe.f0.f0.choice instanceof IntegerLiteral && pe.f2.f0.choice instanceof Identifier) {
@@ -558,12 +571,13 @@ public class ParallelizeVisitor<R, A> implements GJVisitor<String, A> {
 
                   }
                } else {
-                  currLoop.array_access_across_iters = true;
+                  // currLoop.array_access_across_iters = true;
                   //// currLoop.isFunctOfLoopVar.remove(id);
+                  currLoop.refFromOut.add(id1);
                   currLoop.functionOfIterVar.remove(id);
                   if (DEBUG) {
                      System.out.println(id + " is not a function of iter var: ");
-                     System.out.println("And array access across iterations: " + id1);
+                     // System.out.println("And array access across iterations: " + id1);
                   }
                }
             }
@@ -586,29 +600,33 @@ public class ParallelizeVisitor<R, A> implements GJVisitor<String, A> {
                   //// currLoop.isFunctOfLoopVar.add(id);
                   // Diophantine d1 = new Diophantine(currLoop.functionOfIterVar.get(id1));
                   // currLoop.functionOfIterVar.put(id, id1 + " + " + id2);
-                  currLoop.array_access_across_iters = true;
+                  // currLoop.array_access_across_iters = true;
+                  currLoop.refFromOut.add(id2);
                   if (DEBUG) {
                      System.out.println(id + " is a function of iter var: ");
                      // currLoop.functionOfIterVar.get(id).Visualize();
-                     System.out.println("But array access across iterations: " + id2);
+                     // System.out.println("But array access across iterations: " + id2);
                   }
                } else if (currLoop.functionOfIterVar.containsKey(id2)) {
                   //// currLoop.isFunctOfLoopVar.add(id);
                   // Diophantine d1 = new Diophantine(currLoop.functionOfIterVar.get(id2));
                   // currLoop.functionOfIterVar.put(id, id1 + " + " + id2);
-                  currLoop.array_access_across_iters = true;
+                  // currLoop.array_access_across_iters = true;
+                  currLoop.refFromOut.add(id1);
                   if (DEBUG) {
                      System.out.println(id + " is a function of iter var: ");
                      // currLoop.functionOfIterVar.get(id).Visualize();
-                     System.out.println("But array access across iterations: " + id1);
+                     // System.out.println("But array access across iterations: " + id1);
                   }
                } else {
-                  currLoop.array_access_across_iters = true;
+                  // currLoop.array_access_across_iters = true;
                   //// currLoop.isFunctOfLoopVar.remove(id);
+                  currLoop.refFromOut.add(id1);
+                  currLoop.refFromOut.add(id2);
                   currLoop.functionOfIterVar.remove(id);
                   if (DEBUG) {
                      System.out.println(id + " is not a function of iter var: ");
-                     System.out.println("And array access across iterations: " + id1);
+                     // System.out.println("And array access across iterations: " + id1);
                   }
                }
             } else if (pe.f0.f0.choice instanceof Identifier && pe.f2.f0.choice instanceof IntegerLiteral) {
@@ -626,12 +644,13 @@ public class ParallelizeVisitor<R, A> implements GJVisitor<String, A> {
 
                   }
                } else {
-                  currLoop.array_access_across_iters = true;
+                  // currLoop.array_access_across_iters = true;
                   //// currLoop.isFunctOfLoopVar.remove(id);
+                  currLoop.refFromOut.add(id1);
                   currLoop.functionOfIterVar.remove(id);
                   if (DEBUG) {
                      System.out.println(id + " is not a function of iter var: ");
-                     System.out.println("And array access across iterations: " + id1);
+                     // System.out.println("And array access across iterations: " + id1);
                   }
                }
             } else if (pe.f0.f0.choice instanceof IntegerLiteral && pe.f2.f0.choice instanceof Identifier) {
@@ -649,12 +668,13 @@ public class ParallelizeVisitor<R, A> implements GJVisitor<String, A> {
 
                   }
                } else {
-                  currLoop.array_access_across_iters = true;
+                  // currLoop.array_access_across_iters = true;
                   //// currLoop.isFunctOfLoopVar.remove(id);
+                  currLoop.refFromOut.add(id1);
                   currLoop.functionOfIterVar.remove(id);
                   if (DEBUG) {
                      System.out.println(id + " is not a function of iter var: ");
-                     System.out.println("And array access across iterations: " + id1);
+                     // System.out.println("And array access across iterations: " + id1);
                   }
                }
             }
@@ -677,29 +697,33 @@ public class ParallelizeVisitor<R, A> implements GJVisitor<String, A> {
                   //// currLoop.isFunctOfLoopVar.add(id);
                   // Diophantine d1 = new Diophantine(currLoop.functionOfIterVar.get(id1));
                   // currLoop.functionOfIterVar.put(id, id1 + " + " + id2);
-                  currLoop.array_access_across_iters = true;
+                  // currLoop.array_access_across_iters = true;
+                  currLoop.refFromOut.add(id2);
                   if (DEBUG) {
                      System.out.println(id + " is a function of iter var: ");
                      // currLoop.functionOfIterVar.get(id).Visualize();
-                     System.out.println("But array access across iterations: " + id2);
+                     // System.out.println("But array access across iterations: " + id2);
                   }
                } else if (currLoop.functionOfIterVar.containsKey(id2)) {
                   //// currLoop.isFunctOfLoopVar.add(id);
                   // Diophantine d1 = new Diophantine(currLoop.functionOfIterVar.get(id2));
                   // currLoop.functionOfIterVar.put(id, id1 + " + " + id2);
-                  currLoop.array_access_across_iters = true;
+                  // currLoop.array_access_across_iters = true;
+                  currLoop.refFromOut.add(id1);
                   if (DEBUG) {
                      System.out.println(id + " is a function of iter var: ");
                      // currLoop.functionOfIterVar.get(id).Visualize();
-                     System.out.println("But array access across iterations: " + id1);
+                     // System.out.println("But array access across iterations: " + id1);
                   }
                } else {
-                  currLoop.array_access_across_iters = true;
+                  // currLoop.array_access_across_iters = true;
                   //// currLoop.isFunctOfLoopVar.remove(id);
+                  currLoop.refFromOut.add(id1);
+                  currLoop.refFromOut.add(id2);
                   currLoop.functionOfIterVar.remove(id);
                   if (DEBUG) {
                      System.out.println(id + " is not a function of iter var: ");
-                     System.out.println("And array access across iterations: " + id1);
+                     // System.out.println("And array access across iterations: " + id1);
                   }
                }
             } else if (pe.f0.f0.choice instanceof Identifier && pe.f2.f0.choice instanceof IntegerLiteral) {
@@ -717,12 +741,13 @@ public class ParallelizeVisitor<R, A> implements GJVisitor<String, A> {
 
                   }
                } else {
-                  currLoop.array_access_across_iters = true;
+                  // currLoop.array_access_across_iters = true;
                   //// currLoop.isFunctOfLoopVar.remove(id);
+                  currLoop.refFromOut.add(id1);
                   currLoop.functionOfIterVar.remove(id);
                   if (DEBUG) {
                      System.out.println(id + " is not a function of iter var: ");
-                     System.out.println("And array access across iterations: " + id1);
+                     // System.out.println("And array access across iterations: " + id1);
                   }
                }
             } else if (pe.f0.f0.choice instanceof IntegerLiteral && pe.f2.f0.choice instanceof Identifier) {
@@ -740,12 +765,13 @@ public class ParallelizeVisitor<R, A> implements GJVisitor<String, A> {
 
                   }
                } else {
-                  currLoop.array_access_across_iters = true;
+                  // currLoop.array_access_across_iters = true;
                   //// currLoop.isFunctOfLoopVar.remove(id);
+                  currLoop.refFromOut.add(id1);
                   currLoop.functionOfIterVar.remove(id);
                   if (DEBUG) {
                      System.out.println(id + " is not a function of iter var: ");
-                     System.out.println("And array access across iterations: " + id1);
+                     // System.out.println("And array access across iterations: " + id1);
                   }
                }
             }
@@ -1190,7 +1216,10 @@ public class ParallelizeVisitor<R, A> implements GJVisitor<String, A> {
       n.f11.accept(this, argu);
       currLoop.CheckParallelizability();
       if (loopStack.size() > 0) {
-         currLoop = loopStack.pop();
+         loopStack.pop();
+      }
+      if (loopStack.size() > 0) {
+         currLoop = loopStack.peek();
       } else {
          currLoop = null;
       }
@@ -1287,6 +1316,691 @@ public class ParallelizeVisitor<R, A> implements GJVisitor<String, A> {
    public String visit(ArithemeticExpression n, A argu) {
       String _ret = null;
       n.f0.accept(this, argu);
+      if (n.f0.choice instanceof PlusExpression) {
+         PlusExpression pe = (PlusExpression) n.f0.choice;
+         if (pe.f0.f0.choice instanceof ArrayLookup && pe.f2.f0.choice instanceof ArrayLookup) {
+            String id1 = null;
+            String id2 = null;
+            if (((ArrayLookup) pe.f0.f0.choice).f2.f0.choice instanceof Identifier) {
+               id1 = ((Identifier) ((ArrayLookup) pe.f0.f0.choice).f2.f0.choice).f0.tokenImage;
+            }
+            if (((ArrayLookup) pe.f2.f0.choice).f2.f0.choice instanceof Identifier) {
+               id2 = ((Identifier) ((ArrayLookup) pe.f2.f0.choice).f2.f0.choice).f0.tokenImage;
+            }
+
+            if (currLoop.functionOfIterVar.containsKey(id1) && currLoop.functionOfIterVar.containsKey(id2)) {
+            } else if (currLoop.functionOfIterVar.containsKey(id1) && id2 != null) {
+               currLoop.refFromOut.add(id2);
+            } else if (currLoop.functionOfIterVar.containsKey(id2) && id1 != null) {
+               currLoop.refFromOut.add(id1);
+            } else {
+               if (id1 != null)
+                  currLoop.refFromOut.add(id1);
+               if (id2 != null)
+                  currLoop.refFromOut.add(id2);
+            }
+         } else if (pe.f0.f0.choice instanceof ArrayLookup && pe.f2.f0.choice instanceof Identifier) {
+            String id1 = null;
+            String id2 = null;
+            if (((ArrayLookup) pe.f0.f0.choice).f2.f0.choice instanceof Identifier) {
+               id1 = ((Identifier) ((ArrayLookup) pe.f0.f0.choice).f2.f0.choice).f0.tokenImage;
+            }
+            if (pe.f2.f0.choice instanceof Identifier) {
+               id2 = ((Identifier) pe.f2.f0.choice).f0.tokenImage;
+            }
+            if (currLoop.functionOfIterVar.containsKey(id1) && currLoop.functionOfIterVar.containsKey(id2)) {
+            } else if (currLoop.functionOfIterVar.containsKey(id1) && id2 != null) {
+               currLoop.refFromOut.add(id2);
+            } else if (currLoop.functionOfIterVar.containsKey(id2) && id1 != null) {
+               currLoop.refFromOut.add(id1);
+            } else {
+               if (id1 != null)
+                  currLoop.refFromOut.add(id1);
+               if (id2 != null)
+                  currLoop.refFromOut.add(id2);
+            }
+         } else if (pe.f0.f0.choice instanceof Identifier && pe.f2.f0.choice instanceof ArrayLookup) {
+            String id1 = null;
+            if (pe.f0.f0.choice instanceof Identifier) {
+               id1 = ((Identifier) pe.f0.f0.choice).f0.tokenImage;
+            }
+            String id2 = null;
+            if (((ArrayLookup) pe.f2.f0.choice).f2.f0.choice instanceof Identifier) {
+               id2 = ((Identifier) ((ArrayLookup) pe.f2.f0.choice).f2.f0.choice).f0.tokenImage;
+            }
+            if (currLoop.functionOfIterVar.containsKey(id1) && currLoop.functionOfIterVar.containsKey(id2)) {
+            } else if (currLoop.functionOfIterVar.containsKey(id1) && id2 != null) {
+               currLoop.refFromOut.add(id2);
+            } else if (currLoop.functionOfIterVar.containsKey(id2) && id1 != null) {
+               currLoop.refFromOut.add(id1);
+            } else {
+               if (id1 != null)
+                  currLoop.refFromOut.add(id1);
+               if (id2 != null)
+                  currLoop.refFromOut.add(id2);
+            }
+         } else if (pe.f0.f0.choice instanceof Identifier && pe.f2.f0.choice instanceof Identifier) {
+            String id1 = null;
+            String id2 = null;
+            if (pe.f0.f0.choice instanceof Identifier) {
+               id1 = ((Identifier) pe.f0.f0.choice).f0.tokenImage;
+            }
+            if (pe.f2.f0.choice instanceof Identifier) {
+               id2 = ((Identifier) pe.f2.f0.choice).f0.tokenImage;
+            }
+
+            if (currLoop.functionOfIterVar.containsKey(id1) && currLoop.functionOfIterVar.containsKey(id2)) {
+            } else if (currLoop.functionOfIterVar.containsKey(id1) && id2 != null) {
+               currLoop.refFromOut.add(id2);
+            } else if (currLoop.functionOfIterVar.containsKey(id2) && id1 != null) {
+               currLoop.refFromOut.add(id1);
+            } else {
+               if (id1 != null)
+                  currLoop.refFromOut.add(id1);
+               if (id2 != null)
+                  currLoop.refFromOut.add(id2);
+            }
+
+         } else if (pe.f0.f0.choice instanceof IntegerLiteral && pe.f2.f0.choice instanceof ArrayLookup) {
+            String id1 = null;
+            if (pe.f0.f0.choice instanceof Identifier) {
+               id1 = ((Identifier) pe.f0.f0.choice).f0.tokenImage;
+            }
+            String id2 = null;
+            if (((ArrayLookup) pe.f2.f0.choice).f2.f0.choice instanceof Identifier) {
+               id2 = ((Identifier) ((ArrayLookup) pe.f2.f0.choice).f2.f0.choice).f0.tokenImage;
+            }
+            if (currLoop.functionOfIterVar.containsKey(id1) && currLoop.functionOfIterVar.containsKey(id2)) {
+            } else if (currLoop.functionOfIterVar.containsKey(id1) && id2 != null) {
+               currLoop.refFromOut.add(id2);
+            } else if (currLoop.functionOfIterVar.containsKey(id2) && id1 != null) {
+               currLoop.refFromOut.add(id1);
+            } else {
+               if (id1 != null)
+                  currLoop.refFromOut.add(id1);
+               if (id2 != null)
+                  currLoop.refFromOut.add(id2);
+            }
+         } else if (pe.f0.f0.choice instanceof ArrayLookup && pe.f2.f0.choice instanceof IntegerLiteral) {
+            String id1 = null;
+            String id2 = null;
+            if (((ArrayLookup) pe.f0.f0.choice).f2.f0.choice instanceof Identifier) {
+               id1 = ((Identifier) ((ArrayLookup) pe.f0.f0.choice).f2.f0.choice).f0.tokenImage;
+            }
+            if (pe.f2.f0.choice instanceof Identifier) {
+               id2 = ((Identifier) pe.f2.f0.choice).f0.tokenImage;
+            }
+            if (currLoop.functionOfIterVar.containsKey(id1) && currLoop.functionOfIterVar.containsKey(id2)) {
+            } else if (currLoop.functionOfIterVar.containsKey(id1) && id2 != null) {
+               currLoop.refFromOut.add(id2);
+            } else if (currLoop.functionOfIterVar.containsKey(id2) && id1 != null) {
+               currLoop.refFromOut.add(id1);
+            } else {
+               if (id1 != null)
+                  currLoop.refFromOut.add(id1);
+               if (id2 != null)
+                  currLoop.refFromOut.add(id2);
+            }
+         } else if (pe.f0.f0.choice instanceof IntegerLiteral && pe.f2.f0.choice instanceof Identifier) {
+            String id1 = null;
+            String id2 = null;
+            if (pe.f0.f0.choice instanceof Identifier) {
+               id1 = ((Identifier) pe.f0.f0.choice).f0.tokenImage;
+            }
+            if (pe.f2.f0.choice instanceof Identifier) {
+               id2 = ((Identifier) pe.f2.f0.choice).f0.tokenImage;
+            }
+
+            if (currLoop.functionOfIterVar.containsKey(id1) && currLoop.functionOfIterVar.containsKey(id2)) {
+            } else if (currLoop.functionOfIterVar.containsKey(id1) && id2 != null) {
+               currLoop.refFromOut.add(id2);
+            } else if (currLoop.functionOfIterVar.containsKey(id2) && id1 != null) {
+               currLoop.refFromOut.add(id1);
+            } else {
+               if (id1 != null)
+                  currLoop.refFromOut.add(id1);
+               if (id2 != null)
+                  currLoop.refFromOut.add(id2);
+            }
+
+         } else if (pe.f0.f0.choice instanceof Identifier && pe.f2.f0.choice instanceof IntegerLiteral) {
+            String id1 = null;
+            String id2 = null;
+            if (pe.f0.f0.choice instanceof Identifier) {
+               id1 = ((Identifier) pe.f0.f0.choice).f0.tokenImage;
+            }
+            if (pe.f2.f0.choice instanceof Identifier) {
+               id2 = ((Identifier) pe.f2.f0.choice).f0.tokenImage;
+            }
+
+            if (currLoop.functionOfIterVar.containsKey(id1) && currLoop.functionOfIterVar.containsKey(id2)) {
+            } else if (currLoop.functionOfIterVar.containsKey(id1) && id2 != null) {
+               currLoop.refFromOut.add(id2);
+            } else if (currLoop.functionOfIterVar.containsKey(id2)) {
+               currLoop.refFromOut.add(id1);
+            } else {
+               if (id1 != null)
+                  currLoop.refFromOut.add(id1);
+               if (id2 != null)
+                  currLoop.refFromOut.add(id2);
+            }
+         } else if (pe.f0.f0.choice instanceof IntegerLiteral && pe.f2.f0.choice instanceof IntegerLiteral) {
+            ;
+         }
+      } else if (n.f0.choice instanceof MinusExpression) {
+         MinusExpression pe = (MinusExpression) n.f0.choice;
+         if (pe.f0.f0.choice instanceof ArrayLookup && pe.f2.f0.choice instanceof ArrayLookup) {
+            String id1 = null;
+            String id2 = null;
+            if (((ArrayLookup) pe.f0.f0.choice).f2.f0.choice instanceof Identifier) {
+               id1 = ((Identifier) ((ArrayLookup) pe.f0.f0.choice).f2.f0.choice).f0.tokenImage;
+            }
+            if (((ArrayLookup) pe.f2.f0.choice).f2.f0.choice instanceof Identifier) {
+               id2 = ((Identifier) ((ArrayLookup) pe.f2.f0.choice).f2.f0.choice).f0.tokenImage;
+            }
+
+            if (currLoop.functionOfIterVar.containsKey(id1) && currLoop.functionOfIterVar.containsKey(id2)) {
+            } else if (currLoop.functionOfIterVar.containsKey(id1) && id2 != null) {
+               currLoop.refFromOut.add(id2);
+            } else if (currLoop.functionOfIterVar.containsKey(id2) && id1 != null) {
+               currLoop.refFromOut.add(id1);
+            } else {
+               if (id1 != null)
+                  currLoop.refFromOut.add(id1);
+               if (id2 != null)
+                  currLoop.refFromOut.add(id2);
+            }
+         } else if (pe.f0.f0.choice instanceof ArrayLookup && pe.f2.f0.choice instanceof Identifier) {
+            String id1 = null;
+            String id2 = null;
+            if (((ArrayLookup) pe.f0.f0.choice).f2.f0.choice instanceof Identifier) {
+               id1 = ((Identifier) ((ArrayLookup) pe.f0.f0.choice).f2.f0.choice).f0.tokenImage;
+            }
+            if (pe.f2.f0.choice instanceof Identifier) {
+               id2 = ((Identifier) pe.f2.f0.choice).f0.tokenImage;
+            }
+            if (currLoop.functionOfIterVar.containsKey(id1) && currLoop.functionOfIterVar.containsKey(id2)) {
+            } else if (currLoop.functionOfIterVar.containsKey(id1) && id2 != null) {
+               currLoop.refFromOut.add(id2);
+            } else if (currLoop.functionOfIterVar.containsKey(id2) && id1 != null) {
+               currLoop.refFromOut.add(id1);
+            } else {
+               if (id1 != null)
+                  currLoop.refFromOut.add(id1);
+               if (id2 != null)
+                  currLoop.refFromOut.add(id2);
+            }
+         } else if (pe.f0.f0.choice instanceof Identifier && pe.f2.f0.choice instanceof ArrayLookup) {
+            String id1 = null;
+            if (pe.f0.f0.choice instanceof Identifier) {
+               id1 = ((Identifier) pe.f0.f0.choice).f0.tokenImage;
+            }
+            String id2 = null;
+            if (((ArrayLookup) pe.f2.f0.choice).f2.f0.choice instanceof Identifier) {
+               id2 = ((Identifier) ((ArrayLookup) pe.f2.f0.choice).f2.f0.choice).f0.tokenImage;
+            }
+            if (currLoop.functionOfIterVar.containsKey(id1) && currLoop.functionOfIterVar.containsKey(id2)) {
+            } else if (currLoop.functionOfIterVar.containsKey(id1) && id2 != null) {
+               currLoop.refFromOut.add(id2);
+            } else if (currLoop.functionOfIterVar.containsKey(id2) && id1 != null) {
+               currLoop.refFromOut.add(id1);
+            } else {
+               if (id1 != null)
+                  currLoop.refFromOut.add(id1);
+               if (id2 != null)
+                  currLoop.refFromOut.add(id2);
+            }
+         } else if (pe.f0.f0.choice instanceof Identifier && pe.f2.f0.choice instanceof Identifier) {
+            String id1 = null;
+            String id2 = null;
+            if (pe.f0.f0.choice instanceof Identifier) {
+               id1 = ((Identifier) pe.f0.f0.choice).f0.tokenImage;
+            }
+            if (pe.f2.f0.choice instanceof Identifier) {
+               id2 = ((Identifier) pe.f2.f0.choice).f0.tokenImage;
+            }
+
+            if (currLoop.functionOfIterVar.containsKey(id1) && currLoop.functionOfIterVar.containsKey(id2)) {
+            } else if (currLoop.functionOfIterVar.containsKey(id1) && id2 != null) {
+               currLoop.refFromOut.add(id2);
+            } else if (currLoop.functionOfIterVar.containsKey(id2) && id1 != null) {
+               currLoop.refFromOut.add(id1);
+            } else {
+               if (id1 != null)
+                  currLoop.refFromOut.add(id1);
+               if (id2 != null)
+                  currLoop.refFromOut.add(id2);
+            }
+
+         } else if (pe.f0.f0.choice instanceof IntegerLiteral && pe.f2.f0.choice instanceof ArrayLookup) {
+            String id1 = null;
+            if (pe.f0.f0.choice instanceof Identifier) {
+               id1 = ((Identifier) pe.f0.f0.choice).f0.tokenImage;
+            }
+            String id2 = null;
+            if (((ArrayLookup) pe.f2.f0.choice).f2.f0.choice instanceof Identifier) {
+               id2 = ((Identifier) ((ArrayLookup) pe.f2.f0.choice).f2.f0.choice).f0.tokenImage;
+            }
+            if (currLoop.functionOfIterVar.containsKey(id1) && currLoop.functionOfIterVar.containsKey(id2)) {
+            } else if (currLoop.functionOfIterVar.containsKey(id1) && id2 != null) {
+               currLoop.refFromOut.add(id2);
+            } else if (currLoop.functionOfIterVar.containsKey(id2) && id1 != null) {
+               currLoop.refFromOut.add(id1);
+            } else {
+               if (id1 != null)
+                  currLoop.refFromOut.add(id1);
+               if (id2 != null)
+                  currLoop.refFromOut.add(id2);
+            }
+         } else if (pe.f0.f0.choice instanceof ArrayLookup && pe.f2.f0.choice instanceof IntegerLiteral) {
+            String id1 = null;
+            String id2 = null;
+            if (((ArrayLookup) pe.f0.f0.choice).f2.f0.choice instanceof Identifier) {
+               id1 = ((Identifier) ((ArrayLookup) pe.f0.f0.choice).f2.f0.choice).f0.tokenImage;
+            }
+            if (pe.f2.f0.choice instanceof Identifier) {
+               id2 = ((Identifier) pe.f2.f0.choice).f0.tokenImage;
+            }
+            if (currLoop.functionOfIterVar.containsKey(id1) && currLoop.functionOfIterVar.containsKey(id2)) {
+            } else if (currLoop.functionOfIterVar.containsKey(id1) && id2 != null) {
+               currLoop.refFromOut.add(id2);
+            } else if (currLoop.functionOfIterVar.containsKey(id2) && id1 != null) {
+               currLoop.refFromOut.add(id1);
+            } else {
+               if (id1 != null)
+                  currLoop.refFromOut.add(id1);
+               if (id2 != null)
+                  currLoop.refFromOut.add(id2);
+            }
+         } else if (pe.f0.f0.choice instanceof IntegerLiteral && pe.f2.f0.choice instanceof Identifier) {
+            String id1 = null;
+            String id2 = null;
+            if (pe.f0.f0.choice instanceof Identifier) {
+               id1 = ((Identifier) pe.f0.f0.choice).f0.tokenImage;
+            }
+            if (pe.f2.f0.choice instanceof Identifier) {
+               id2 = ((Identifier) pe.f2.f0.choice).f0.tokenImage;
+            }
+
+            if (currLoop.functionOfIterVar.containsKey(id1) && currLoop.functionOfIterVar.containsKey(id2)) {
+            } else if (currLoop.functionOfIterVar.containsKey(id1) && id2 != null) {
+               currLoop.refFromOut.add(id2);
+            } else if (currLoop.functionOfIterVar.containsKey(id2) && id1 != null) {
+               currLoop.refFromOut.add(id1);
+            } else {
+               if (id1 != null)
+                  currLoop.refFromOut.add(id1);
+               if (id2 != null)
+                  currLoop.refFromOut.add(id2);
+            }
+
+         } else if (pe.f0.f0.choice instanceof Identifier && pe.f2.f0.choice instanceof IntegerLiteral) {
+            String id1 = null;
+            String id2 = null;
+            if (pe.f0.f0.choice instanceof Identifier) {
+               id1 = ((Identifier) pe.f0.f0.choice).f0.tokenImage;
+            }
+            if (pe.f2.f0.choice instanceof Identifier) {
+               id2 = ((Identifier) pe.f2.f0.choice).f0.tokenImage;
+            }
+
+            if (currLoop.functionOfIterVar.containsKey(id1) && currLoop.functionOfIterVar.containsKey(id2)) {
+            } else if (currLoop.functionOfIterVar.containsKey(id1) && id2 != null) {
+               currLoop.refFromOut.add(id2);
+            } else if (currLoop.functionOfIterVar.containsKey(id2)) {
+               currLoop.refFromOut.add(id1);
+            } else {
+               if (id1 != null)
+                  currLoop.refFromOut.add(id1);
+               if (id2 != null)
+                  currLoop.refFromOut.add(id2);
+            }
+         } else if (pe.f0.f0.choice instanceof IntegerLiteral && pe.f2.f0.choice instanceof IntegerLiteral) {
+            ;
+         }
+      } else if (n.f0.choice instanceof TimesExpression) {
+         TimesExpression pe = (TimesExpression) n.f0.choice;
+         if (pe.f0.f0.choice instanceof ArrayLookup && pe.f2.f0.choice instanceof ArrayLookup) {
+            String id1 = null;
+            String id2 = null;
+            if (((ArrayLookup) pe.f0.f0.choice).f2.f0.choice instanceof Identifier) {
+               id1 = ((Identifier) ((ArrayLookup) pe.f0.f0.choice).f2.f0.choice).f0.tokenImage;
+            }
+            if (((ArrayLookup) pe.f2.f0.choice).f2.f0.choice instanceof Identifier) {
+               id2 = ((Identifier) ((ArrayLookup) pe.f2.f0.choice).f2.f0.choice).f0.tokenImage;
+            }
+
+            if (currLoop.functionOfIterVar.containsKey(id1) && currLoop.functionOfIterVar.containsKey(id2)) {
+            } else if (currLoop.functionOfIterVar.containsKey(id1) && id2 != null) {
+               currLoop.refFromOut.add(id2);
+            } else if (currLoop.functionOfIterVar.containsKey(id2) && id1 != null) {
+               currLoop.refFromOut.add(id1);
+            } else {
+               if (id1 != null)
+                  currLoop.refFromOut.add(id1);
+               if (id2 != null)
+                  currLoop.refFromOut.add(id2);
+            }
+         } else if (pe.f0.f0.choice instanceof ArrayLookup && pe.f2.f0.choice instanceof Identifier) {
+            String id1 = null;
+            String id2 = null;
+            if (((ArrayLookup) pe.f0.f0.choice).f2.f0.choice instanceof Identifier) {
+               id1 = ((Identifier) ((ArrayLookup) pe.f0.f0.choice).f2.f0.choice).f0.tokenImage;
+            }
+            if (pe.f2.f0.choice instanceof Identifier) {
+               id2 = ((Identifier) pe.f2.f0.choice).f0.tokenImage;
+            }
+            if (currLoop.functionOfIterVar.containsKey(id1) && currLoop.functionOfIterVar.containsKey(id2)) {
+            } else if (currLoop.functionOfIterVar.containsKey(id1) && id2 != null) {
+               currLoop.refFromOut.add(id2);
+            } else if (currLoop.functionOfIterVar.containsKey(id2) && id1 != null) {
+               currLoop.refFromOut.add(id1);
+            } else {
+               if (id1 != null)
+                  currLoop.refFromOut.add(id1);
+               if (id2 != null)
+                  currLoop.refFromOut.add(id2);
+            }
+         } else if (pe.f0.f0.choice instanceof Identifier && pe.f2.f0.choice instanceof ArrayLookup) {
+            String id1 = null;
+            if (pe.f0.f0.choice instanceof Identifier) {
+               id1 = ((Identifier) pe.f0.f0.choice).f0.tokenImage;
+            }
+            String id2 = null;
+            if (((ArrayLookup) pe.f2.f0.choice).f2.f0.choice instanceof Identifier) {
+               id2 = ((Identifier) ((ArrayLookup) pe.f2.f0.choice).f2.f0.choice).f0.tokenImage;
+            }
+            if (currLoop.functionOfIterVar.containsKey(id1) && currLoop.functionOfIterVar.containsKey(id2)) {
+            } else if (currLoop.functionOfIterVar.containsKey(id1) && id2 != null) {
+               currLoop.refFromOut.add(id2);
+            } else if (currLoop.functionOfIterVar.containsKey(id2) && id1 != null) {
+               currLoop.refFromOut.add(id1);
+            } else {
+               if (id1 != null)
+                  currLoop.refFromOut.add(id1);
+               if (id2 != null)
+                  currLoop.refFromOut.add(id2);
+            }
+         } else if (pe.f0.f0.choice instanceof Identifier && pe.f2.f0.choice instanceof Identifier) {
+            String id1 = null;
+            String id2 = null;
+            if (pe.f0.f0.choice instanceof Identifier) {
+               id1 = ((Identifier) pe.f0.f0.choice).f0.tokenImage;
+            }
+            if (pe.f2.f0.choice instanceof Identifier) {
+               id2 = ((Identifier) pe.f2.f0.choice).f0.tokenImage;
+            }
+
+            if (currLoop.functionOfIterVar.containsKey(id1) && currLoop.functionOfIterVar.containsKey(id2)) {
+            } else if (currLoop.functionOfIterVar.containsKey(id1) && id2 != null) {
+               currLoop.refFromOut.add(id2);
+            } else if (currLoop.functionOfIterVar.containsKey(id2) && id1 != null) {
+               currLoop.refFromOut.add(id1);
+            } else {
+               if (id1 != null)
+                  currLoop.refFromOut.add(id1);
+               if (id2 != null)
+                  currLoop.refFromOut.add(id2);
+            }
+
+         } else if (pe.f0.f0.choice instanceof IntegerLiteral && pe.f2.f0.choice instanceof ArrayLookup) {
+            String id1 = null;
+            if (pe.f0.f0.choice instanceof Identifier) {
+               id1 = ((Identifier) pe.f0.f0.choice).f0.tokenImage;
+            }
+            String id2 = null;
+            if (((ArrayLookup) pe.f2.f0.choice).f2.f0.choice instanceof Identifier) {
+               id2 = ((Identifier) ((ArrayLookup) pe.f2.f0.choice).f2.f0.choice).f0.tokenImage;
+            }
+            if (currLoop.functionOfIterVar.containsKey(id1) && currLoop.functionOfIterVar.containsKey(id2)) {
+            } else if (currLoop.functionOfIterVar.containsKey(id1) && id2 != null) {
+               currLoop.refFromOut.add(id2);
+            } else if (currLoop.functionOfIterVar.containsKey(id2) && id1 != null) {
+               currLoop.refFromOut.add(id1);
+            } else {
+               if (id1 != null)
+                  currLoop.refFromOut.add(id1);
+               if (id2 != null)
+                  currLoop.refFromOut.add(id2);
+            }
+         } else if (pe.f0.f0.choice instanceof ArrayLookup && pe.f2.f0.choice instanceof IntegerLiteral) {
+            String id1 = null;
+            String id2 = null;
+            if (((ArrayLookup) pe.f0.f0.choice).f2.f0.choice instanceof Identifier) {
+               id1 = ((Identifier) ((ArrayLookup) pe.f0.f0.choice).f2.f0.choice).f0.tokenImage;
+            }
+            if (pe.f2.f0.choice instanceof Identifier) {
+               id2 = ((Identifier) pe.f2.f0.choice).f0.tokenImage;
+            }
+            if (currLoop.functionOfIterVar.containsKey(id1) && currLoop.functionOfIterVar.containsKey(id2)) {
+            } else if (currLoop.functionOfIterVar.containsKey(id1) && id2 != null) {
+               currLoop.refFromOut.add(id2);
+            } else if (currLoop.functionOfIterVar.containsKey(id2) && id1 != null) {
+               currLoop.refFromOut.add(id1);
+            } else {
+               if (id1 != null)
+                  currLoop.refFromOut.add(id1);
+               if (id2 != null)
+                  currLoop.refFromOut.add(id2);
+            }
+         } else if (pe.f0.f0.choice instanceof IntegerLiteral && pe.f2.f0.choice instanceof Identifier) {
+            String id1 = null;
+            String id2 = null;
+            if (pe.f0.f0.choice instanceof Identifier) {
+               id1 = ((Identifier) pe.f0.f0.choice).f0.tokenImage;
+            }
+            if (pe.f2.f0.choice instanceof Identifier) {
+               id2 = ((Identifier) pe.f2.f0.choice).f0.tokenImage;
+            }
+
+            if (currLoop.functionOfIterVar.containsKey(id1) && currLoop.functionOfIterVar.containsKey(id2)) {
+            } else if (currLoop.functionOfIterVar.containsKey(id1) && id2 != null) {
+               currLoop.refFromOut.add(id2);
+            } else if (currLoop.functionOfIterVar.containsKey(id2) && id1 != null) {
+               currLoop.refFromOut.add(id1);
+            } else {
+               if (id1 != null)
+                  currLoop.refFromOut.add(id1);
+               if (id2 != null)
+                  currLoop.refFromOut.add(id2);
+            }
+
+         } else if (pe.f0.f0.choice instanceof Identifier && pe.f2.f0.choice instanceof IntegerLiteral) {
+            String id1 = null;
+            String id2 = null;
+            if (pe.f0.f0.choice instanceof Identifier) {
+               id1 = ((Identifier) pe.f0.f0.choice).f0.tokenImage;
+            }
+            if (pe.f2.f0.choice instanceof Identifier) {
+               id2 = ((Identifier) pe.f2.f0.choice).f0.tokenImage;
+            }
+
+            if (currLoop.functionOfIterVar.containsKey(id1) && currLoop.functionOfIterVar.containsKey(id2)) {
+            } else if (currLoop.functionOfIterVar.containsKey(id1) && id2 != null) {
+               currLoop.refFromOut.add(id2);
+            } else if (currLoop.functionOfIterVar.containsKey(id2)) {
+               currLoop.refFromOut.add(id1);
+            } else {
+               if (id1 != null)
+                  currLoop.refFromOut.add(id1);
+               if (id2 != null)
+                  currLoop.refFromOut.add(id2);
+            }
+         } else if (pe.f0.f0.choice instanceof IntegerLiteral && pe.f2.f0.choice instanceof IntegerLiteral) {
+            ;
+         }
+      } else if (n.f0.choice instanceof DivExpression) {
+         DivExpression pe = (DivExpression) n.f0.choice;
+         if (pe.f0.f0.choice instanceof ArrayLookup && pe.f2.f0.choice instanceof ArrayLookup) {
+            String id1 = null;
+            String id2 = null;
+            if (((ArrayLookup) pe.f0.f0.choice).f2.f0.choice instanceof Identifier) {
+               id1 = ((Identifier) ((ArrayLookup) pe.f0.f0.choice).f2.f0.choice).f0.tokenImage;
+            }
+            if (((ArrayLookup) pe.f2.f0.choice).f2.f0.choice instanceof Identifier) {
+               id2 = ((Identifier) ((ArrayLookup) pe.f2.f0.choice).f2.f0.choice).f0.tokenImage;
+            }
+
+            if (currLoop.functionOfIterVar.containsKey(id1) && currLoop.functionOfIterVar.containsKey(id2)) {
+            } else if (currLoop.functionOfIterVar.containsKey(id1) && id2 != null) {
+               currLoop.refFromOut.add(id2);
+            } else if (currLoop.functionOfIterVar.containsKey(id2) && id1 != null) {
+               currLoop.refFromOut.add(id1);
+            } else {
+               if (id1 != null)
+                  currLoop.refFromOut.add(id1);
+               if (id2 != null)
+                  currLoop.refFromOut.add(id2);
+            }
+         } else if (pe.f0.f0.choice instanceof ArrayLookup && pe.f2.f0.choice instanceof Identifier) {
+            String id1 = null;
+            String id2 = null;
+            if (((ArrayLookup) pe.f0.f0.choice).f2.f0.choice instanceof Identifier) {
+               id1 = ((Identifier) ((ArrayLookup) pe.f0.f0.choice).f2.f0.choice).f0.tokenImage;
+            }
+            if (pe.f2.f0.choice instanceof Identifier) {
+               id2 = ((Identifier) pe.f2.f0.choice).f0.tokenImage;
+            }
+            if (currLoop.functionOfIterVar.containsKey(id1) && currLoop.functionOfIterVar.containsKey(id2)) {
+            } else if (currLoop.functionOfIterVar.containsKey(id1) && id2 != null) {
+               currLoop.refFromOut.add(id2);
+            } else if (currLoop.functionOfIterVar.containsKey(id2) && id1 != null) {
+               currLoop.refFromOut.add(id1);
+            } else {
+               if (id1 != null)
+                  currLoop.refFromOut.add(id1);
+               if (id2 != null)
+                  currLoop.refFromOut.add(id2);
+            }
+         } else if (pe.f0.f0.choice instanceof Identifier && pe.f2.f0.choice instanceof ArrayLookup) {
+            String id1 = null;
+            if (pe.f0.f0.choice instanceof Identifier) {
+               id1 = ((Identifier) pe.f0.f0.choice).f0.tokenImage;
+            }
+            String id2 = null;
+            if (((ArrayLookup) pe.f2.f0.choice).f2.f0.choice instanceof Identifier) {
+               id2 = ((Identifier) ((ArrayLookup) pe.f2.f0.choice).f2.f0.choice).f0.tokenImage;
+            }
+            if (currLoop.functionOfIterVar.containsKey(id1) && currLoop.functionOfIterVar.containsKey(id2)) {
+            } else if (currLoop.functionOfIterVar.containsKey(id1) && id2 != null) {
+               currLoop.refFromOut.add(id2);
+            } else if (currLoop.functionOfIterVar.containsKey(id2) && id1 != null) {
+               currLoop.refFromOut.add(id1);
+            } else {
+               if (id1 != null)
+                  currLoop.refFromOut.add(id1);
+               if (id2 != null)
+                  currLoop.refFromOut.add(id2);
+            }
+         } else if (pe.f0.f0.choice instanceof Identifier && pe.f2.f0.choice instanceof Identifier) {
+            String id1 = null;
+            String id2 = null;
+            if (pe.f0.f0.choice instanceof Identifier) {
+               id1 = ((Identifier) pe.f0.f0.choice).f0.tokenImage;
+            }
+            if (pe.f2.f0.choice instanceof Identifier) {
+               id2 = ((Identifier) pe.f2.f0.choice).f0.tokenImage;
+            }
+
+            if (currLoop.functionOfIterVar.containsKey(id1) && currLoop.functionOfIterVar.containsKey(id2)) {
+            } else if (currLoop.functionOfIterVar.containsKey(id1) && id2 != null) {
+               currLoop.refFromOut.add(id2);
+            } else if (currLoop.functionOfIterVar.containsKey(id2) && id1 != null) {
+               currLoop.refFromOut.add(id1);
+            } else {
+               if (id1 != null)
+                  currLoop.refFromOut.add(id1);
+               if (id2 != null)
+                  currLoop.refFromOut.add(id2);
+            }
+
+         } else if (pe.f0.f0.choice instanceof IntegerLiteral && pe.f2.f0.choice instanceof ArrayLookup) {
+            String id1 = null;
+            if (pe.f0.f0.choice instanceof Identifier) {
+               id1 = ((Identifier) pe.f0.f0.choice).f0.tokenImage;
+            }
+            String id2 = null;
+            if (((ArrayLookup) pe.f2.f0.choice).f2.f0.choice instanceof Identifier) {
+               id2 = ((Identifier) ((ArrayLookup) pe.f2.f0.choice).f2.f0.choice).f0.tokenImage;
+            }
+            if (currLoop.functionOfIterVar.containsKey(id1) && currLoop.functionOfIterVar.containsKey(id2)) {
+            } else if (currLoop.functionOfIterVar.containsKey(id1) && id2 != null) {
+               currLoop.refFromOut.add(id2);
+            } else if (currLoop.functionOfIterVar.containsKey(id2) && id1 != null) {
+               currLoop.refFromOut.add(id1);
+            } else {
+               if (id1 != null)
+                  currLoop.refFromOut.add(id1);
+               if (id2 != null)
+                  currLoop.refFromOut.add(id2);
+            }
+         } else if (pe.f0.f0.choice instanceof ArrayLookup && pe.f2.f0.choice instanceof IntegerLiteral) {
+            String id1 = null;
+            String id2 = null;
+            if (((ArrayLookup) pe.f0.f0.choice).f2.f0.choice instanceof Identifier) {
+               id1 = ((Identifier) ((ArrayLookup) pe.f0.f0.choice).f2.f0.choice).f0.tokenImage;
+            }
+            if (pe.f2.f0.choice instanceof Identifier) {
+               id2 = ((Identifier) pe.f2.f0.choice).f0.tokenImage;
+            }
+            if (currLoop.functionOfIterVar.containsKey(id1) && currLoop.functionOfIterVar.containsKey(id2)) {
+            } else if (currLoop.functionOfIterVar.containsKey(id1) && id2 != null) {
+               currLoop.refFromOut.add(id2);
+            } else if (currLoop.functionOfIterVar.containsKey(id2) && id1 != null) {
+               currLoop.refFromOut.add(id1);
+            } else {
+               if (id1 != null)
+                  currLoop.refFromOut.add(id1);
+               if (id2 != null)
+                  currLoop.refFromOut.add(id2);
+            }
+         } else if (pe.f0.f0.choice instanceof IntegerLiteral && pe.f2.f0.choice instanceof Identifier) {
+            String id1 = null;
+            String id2 = null;
+            if (pe.f0.f0.choice instanceof Identifier) {
+               id1 = ((Identifier) pe.f0.f0.choice).f0.tokenImage;
+            }
+            if (pe.f2.f0.choice instanceof Identifier) {
+               id2 = ((Identifier) pe.f2.f0.choice).f0.tokenImage;
+            }
+
+            if (currLoop.functionOfIterVar.containsKey(id1) && currLoop.functionOfIterVar.containsKey(id2)) {
+            } else if (currLoop.functionOfIterVar.containsKey(id1) && id2 != null) {
+               currLoop.refFromOut.add(id2);
+            } else if (currLoop.functionOfIterVar.containsKey(id2) && id1 != null) {
+               currLoop.refFromOut.add(id1);
+            } else {
+               if (id1 != null)
+                  currLoop.refFromOut.add(id1);
+               if (id2 != null)
+                  currLoop.refFromOut.add(id2);
+            }
+
+         } else if (pe.f0.f0.choice instanceof Identifier && pe.f2.f0.choice instanceof IntegerLiteral) {
+            String id1 = null;
+            String id2 = null;
+            if (pe.f0.f0.choice instanceof Identifier) {
+               id1 = ((Identifier) pe.f0.f0.choice).f0.tokenImage;
+            }
+            if (pe.f2.f0.choice instanceof Identifier) {
+               id2 = ((Identifier) pe.f2.f0.choice).f0.tokenImage;
+            }
+
+            if (currLoop.functionOfIterVar.containsKey(id1) && currLoop.functionOfIterVar.containsKey(id2)) {
+            } else if (currLoop.functionOfIterVar.containsKey(id1) && id2 != null) {
+               currLoop.refFromOut.add(id2);
+            } else if (currLoop.functionOfIterVar.containsKey(id2)) {
+               currLoop.refFromOut.add(id1);
+            } else {
+               if (id1 != null)
+                  currLoop.refFromOut.add(id1);
+               if (id2 != null)
+                  currLoop.refFromOut.add(id2);
+            }
+         } else if (pe.f0.f0.choice instanceof IntegerLiteral && pe.f2.f0.choice instanceof IntegerLiteral) {
+            ;
+         }
+      }
       return _ret;
    }
 
@@ -1652,6 +2366,20 @@ public class ParallelizeVisitor<R, A> implements GJVisitor<String, A> {
       n.f1.accept(this, argu);
       n.f2.accept(this, argu);
       n.f3.accept(this, argu);
+      if (currLoop != null) {
+         ArrayLookup al = (ArrayLookup) n.f0;
+         if (al.f2.f0.choice instanceof Identifier) {
+            String id = ((Identifier) al.f2.f0.choice).f0.tokenImage;
+            if (DEBUG) {
+               System.out.println("Vars refered from outside" + currLoop.refFromOut);
+            }
+            if (currLoop.refFromOut.contains(id)) {
+               if (DEBUG)
+                  System.out.println("Inter iteration access of :" + id);
+               currLoop.array_access_across_iters = true;
+            }
+         }
+      }
       return _ret;
    }
 
@@ -1708,8 +2436,8 @@ public class ParallelizeVisitor<R, A> implements GJVisitor<String, A> {
                   currLoop.ComputeDiophantine(currLoop.functionOfIterVar.get(lhsIndId),
                         currLoop.functionOfIterVar.get(rhsIndId));
             } else if (currLoop.functionOfIterVar.containsKey(lhsIndId)) {
-               currLoop.array_access_with_extn_var = true;
             } else if (currLoop.functionOfIterVar.containsKey(rhsIndId)) {
+               currLoop.array_access_with_extn_var = true;
             } else {
                currLoop.refFromOut.add(rhsIndId);
             }

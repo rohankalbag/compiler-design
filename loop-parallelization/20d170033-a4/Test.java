@@ -20,33 +20,29 @@ class Operator {
         int i;
         int j;
         int k;
+        int m;
         arr3 = new int[100];
         arr4 = new int[1000];
-        // Trivially Parallelizable loop.
-        for (i = 1; i <= 200; i = i + 1) {
-            arr4[i] = i;
+
+        for (j = 0; j < 100; j = j + 1) {
+            m = i + 1;
+            m = 3 + j;
+            m = 2 * m;
+            // i = i + 1;
+            arr3[j] = arr3[m];
         }
-        // Parallelizable loop using GCD Test
-        for (i = 1; i <= 10; i = i + 1) {
-            k = i * 2;
-            j = i * 10;
-            j = j + 51;
-            arr3[i] = arr4[k];
-            arr4[j] = k;
+
+        for (i = 0; i < 100; i = i + 1) {
+            for (j = 0; j < 100; j = j + 1) {
+                m = i + 1;
+                arr3[j] = arr3[m];
+            }
         }
-        // Non-Parallelizable loop using GCD Test.
-        for (i = 0; i < 200; i = i + 1) {
-            j = 200 - i;
-            j = j - 1;
-            arr4[i] = arr4[j];
+
+        for (i = 0; i < 10; i = i + 1) {
+            arr3[j] = arr3[i] + arr3[j];
         }
-        arr3 = arr2;
-        arr4 = arr1;
-        // Non-Parallelizable loop. (arr3 and arr4 can be aliases)
-        for (i = 0; i < 99; i = i + 1) {
-            j = i + 1;
-            arr3[i] = arr4[j];
-        }
+
         return arr4;
     }
 }
