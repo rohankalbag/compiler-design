@@ -58,6 +58,7 @@ public class ParallelizeVisitor<R, A> implements GJVisitor<String, A> {
    public LoopInfo currLoop;
    public Stack<LoopInfo> loopStack = new Stack<>();
    public boolean DEBUG = false;
+   public boolean forloopincrement = false;
 
    /**
     * f0 -> MainClass()
@@ -361,7 +362,7 @@ public class ParallelizeVisitor<R, A> implements GJVisitor<String, A> {
          if (DEBUG) {
             System.out.println("Vars refered from outside" + currLoop.refFromOut);
          }
-         if (currLoop.refFromOut.contains(id)) {
+         if (currLoop.refFromOut.contains(id) && !id.equals(currLoop.loop_var)) {
             if (DEBUG)
                System.out.println("Inter iteration access of :" + id);
             currLoop.array_access_across_iters = true;
@@ -1209,7 +1210,9 @@ public class ParallelizeVisitor<R, A> implements GJVisitor<String, A> {
       n.f4.accept(this, argu);
       n.f5.accept(this, argu);
       n.f6.accept(this, argu);
+      forloopincrement = true;
       n.f7.accept(this, argu);
+      forloopincrement = false;
       n.f8.accept(this, argu);
       n.f9.accept(this, argu);
       n.f10.accept(this, argu);
@@ -2373,7 +2376,7 @@ public class ParallelizeVisitor<R, A> implements GJVisitor<String, A> {
             if (DEBUG) {
                System.out.println("Vars refered from outside" + currLoop.refFromOut);
             }
-            if (currLoop.refFromOut.contains(id)) {
+            if (currLoop.refFromOut.contains(id) && !id.equals(currLoop.loop_var)) {
                if (DEBUG)
                   System.out.println("Inter iteration access of :" + id);
                currLoop.array_access_across_iters = true;
