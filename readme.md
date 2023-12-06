@@ -16,7 +16,7 @@ This repository contains implementations of various compiler optimizations and i
 - The schema of a few data structures and a few helper methods have been added in `GJDepthFirst.java`, which are useful during type-checking. It should be noted that the input programs will neither have syntax errors nor any errors related to undeclared or multiply declared identifiers.
 
 - Detailed Problem Specification can be found [here](https://github.com/rohankalbag/compiler-infrastructure-and-optimizations/blob/master/type-checker/assignment-1.pdf)
-- The solution for the same can be found [here](https://github.com/rohankalbag/compiler-infrastructure-and-optimizations/tree/master/type-checker/assignment-1)
+- My solution for the same can be found [here](https://github.com/rohankalbag/compiler-infrastructure-and-optimizations/tree/master/type-checker/assignment-1)
 - All the starter code can be found in `starter.zip`
 
 
@@ -52,7 +52,7 @@ The task involves iterating over the body of instance methods and performing the
 - A liveness API provides the result of liveness analysis as a hashmap that contains a mapping from `Node` to `Set<String>`. The result contains the set of variables that are live at that node i.e. the IN set.
 
 - Detailed Problem Specification can be found [here](https://github.com/rohankalbag/compiler-infrastructure-and-optimizations/blob/master/register-allocation/Assignment-3.pdf)
-- The solution for the same can be found [here](https://github.com/rohankalbag/compiler-infrastructure-and-optimizations/tree/master/register-allocation/assignment-3)
+- My solution for the same can be found [here](https://github.com/rohankalbag/compiler-infrastructure-and-optimizations/tree/master/register-allocation/assignment-3)
 - All the starter code can be found in `starter.zip`
 
 ## Loop Parallelization using GCD Test
@@ -62,5 +62,5 @@ The task involves iterating over the body of instance methods and performing the
 - The task is to iterate over the body of methods and perform loop parallelization based on simple alias and dependence analysis for references and array indices. The GCD test will be used for this purpose. The for loops that are identified as parallelizable should be marked using the `/* @Parallel */` decorator.
 
 - Detailed Problem Specification can be found [here](https://github.com/rohankalbag/compiler-infrastructure-and-optimizations/blob/master/loop-parallelization/Assignment-4.pdf)
-- The solution for the same can be found [here](https://github.com/rohankalbag/compiler-infrastructure-and-optimizations/tree/master/loop-parallelization/assignment-4)
+- My solution for the same can be found [here](https://github.com/rohankalbag/compiler-infrastructure-and-optimizations/tree/master/loop-parallelization/assignment-4)
 - All the starter code can be found in `starter.zip`
