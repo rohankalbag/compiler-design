@@ -15,8 +15,8 @@ This repository contains implementations of various compiler optimizations and i
 
 - The schema of a few data structures and a few helper methods have been added in `GJDepthFirst.java`, which are useful during type-checking. It should be noted that the input programs will neither have syntax errors nor any errors related to undeclared or multiply declared identifiers.
 
-- Detailed Problem Specification can be found [here]()
-- The solution for the same can be found [here]()
+- Detailed Problem Specification can be found [here](https://github.com/rohankalbag/compiler-infrastructure-and-optimizations/blob/master/type-checker/assignment-1.pdf)
+- The solution for the same can be found [here](https://github.com/rohankalbag/compiler-infrastructure-and-optimizations/tree/master/type-checker/assignment-1)
 - All the starter code can be found in `starter.zip`
 
 
@@ -40,8 +40,8 @@ The task involves iterating over the body of instance methods and performing the
     - Input test cases will not contain overloaded methods.
     - There is no specification for renaming variables. i.e., You can rename variables such that the program follows syntactic and semantic correctness. (Input test cases will not contain variable names with underscore character.)
 
-- Detailed Problem Specification can be found [here]()
-- My solution for the same can be found [here]()
+- Detailed Problem Specification can be found [here](https://github.com/rohankalbag/compiler-infrastructure-and-optimizations/blob/master/function-inlining/assignment-2.pdf)
+- My solution for the same can be found [here](https://github.com/rohankalbag/compiler-infrastructure-and-optimizations/tree/master/function-inlining/assignment-2)
 - All the starter code can be found in `starter.zip`
 
 ## Register Allocation using Kempe's Graph Colouring Heuristic
@@ -51,17 +51,16 @@ The task involves iterating over the body of instance methods and performing the
 
 - A liveness API provides the result of liveness analysis as a hashmap that contains a mapping from `Node` to `Set<String>`. The result contains the set of variables that are live at that node i.e. the IN set.
 
-- Detailed Problem Specification can be found [here]()
-- The solution for the same can be found [here]()
+- Detailed Problem Specification can be found [here](https://github.com/rohankalbag/compiler-infrastructure-and-optimizations/blob/master/register-allocation/Assignment-3.pdf)
+- The solution for the same can be found [here](https://github.com/rohankalbag/compiler-infrastructure-and-optimizations/tree/master/register-allocation/assignment-3)
 - All the starter code can be found in `starter.zip`
 
-## Loop Parallelization using GCD Test
 ## Loop Parallelization using GCD Test
 
 - Parallelization enables a loop to run over multiple processors (or threads) with a potentially significant execution speedup. However, not all loops are parallelizable. Running a loop in parallel over several processors can result in iterations executing out of order. Moreover, the multiple threads executing the loop in parallel may interfere with each other whenever there are data dependencies in the loop.
 
 - The task is to iterate over the body of methods and perform loop parallelization based on simple alias and dependence analysis for references and array indices. The GCD test will be used for this purpose. The for loops that are identified as parallelizable should be marked using the `/* @Parallel */` decorator.
 
-- Detailed Problem Specification can be found [here]()
-- The solution for the same can be found [here]()
+- Detailed Problem Specification can be found [here](https://github.com/rohankalbag/compiler-infrastructure-and-optimizations/blob/master/loop-parallelization/Assignment-4.pdf)
+- The solution for the same can be found [here](https://github.com/rohankalbag/compiler-infrastructure-and-optimizations/tree/master/loop-parallelization/assignment-4)
 - All the starter code can be found in `starter.zip`
